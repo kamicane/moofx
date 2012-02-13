@@ -25,7 +25,6 @@ broken alpha version 0.8.7
 µ(element).fx(styles, {duration: "5s", equation: 'cubic-bezier(0,1,1,0)', callback: function(){ //5s duration, cubic-bezier easing function, completion callback
 	console.log('animated');
 }});
-
 ```
 	
 ### style
@@ -39,5 +38,4 @@ broken alpha version 0.8.7
 µ(element).fx(property, value); //set style property to value
 
 µ(element).fx(property); //getter
-
 ```

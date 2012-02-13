@@ -1,0 +1,15 @@
+name: µ
+
+web: "[mad4milk.net](http://mad4milk.net)"
+
+authors: "[Valerio Proietti](http://mad4milk.net)"
+
+license: "[MIT License](http://mootools.net/license.txt)"
+
+copyright: "&copy; [Valerio Proietti](http://mad4milk.net)"
+
+sources:
+  - "src/µ.js"
+  - "src/µframe.js"
+  - "src/µcolor.js"
+  - "src/µfx.js"
