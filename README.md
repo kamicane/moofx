@@ -1,10 +1,10 @@
 # moofx 3 (µfx)
 
-broken alpha version 0.8.7
+broken alpha version 2.8.7
 
 ## usage
 
-### animate
+### animate.
 
 ```javascript
 
@@ -27,7 +27,7 @@ broken alpha version 0.8.7
 }});
 ```
 	
-### style
+### style.
 
 ```javascript
 
@@ -35,7 +35,13 @@ broken alpha version 0.8.7
 
 µ(element).style({background: 'red'});  //set styles
 
-µ(element).fx(property, value); //set style property to value
+µ(element).style(property, value); //set style property to value
 
-µ(element).fx(property); //getter
+µ(element).style(property); //getter
+```
+
+### can't type utf8? copy and paste.
+
+```javascript
+var mu = µ;
 ```
