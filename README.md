@@ -45,3 +45,11 @@ broken alpha version 2.8.7
 ```javascript
 var mu = µ;
 ```
+### build.
+
+download packager [packager](https://github.com/kamicane/packager)
+
+```
+./packager register /path/to/moofx
+./packager build µ/fx > ~/Downloads/moofx3.js
+```
