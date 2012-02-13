@@ -25,7 +25,7 @@ var instances = {}, UID = 0, µi = function(node){
 	return document.querySelector(selector);
 };
 
-µi.version = '0.8.7';
+µi.version = '2.8.7';
 
 window.µ = µi;
 
