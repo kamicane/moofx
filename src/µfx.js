@@ -292,7 +292,8 @@ if (CSSTransform){
 	setters[transformOrigin] = function(v){
 		this.style[CSSTransformOrigin] = string(v);
 	};
-};
+
+}
 
 //misc
 
@@ -499,40 +500,42 @@ var animations = {}, animation = function(element){
 			callback = options.callback || function(){};
 			
 		if (!equation) throw 'invalid equation supplied';
-		if (!duration) throw 'invalid duration supplied';
+		if (duration == null) throw 'invalid duration supplied';
 
 		return [duration, equation, callback];
 	}, retrieve = function(property){
-		var propertyName = browserTable[property] || property,
-			instance = instances[propertyName] || (instances[propertyName] = (CSSTransition) ? new cssAnimation(element, property) : new jsAnimation(element, property));
-		return instance;
+		return instances[property] || (instances[property] = (CSSTransition) ? new cssAnimation(element, property) : new jsAnimation(element, property));
 	};
 
 	this.start = function(property, value, options, parsed){
 		property = camelize(property);
 		
 		var parser = parsers[property];
-		if (!parser) throw 'the ' + property + ' property has no parser';
-		
+		// if (!parser) throw 'no parser found for ' + property;
 		if (!parsed) options = parseOptions(options);
-		if (options[0] == 0){ //duration zero check;
+
+		var duration = options[0], callback = options[2];
+
+		if (duration == 0){ //duration zero check;
 			this.set(property, value);
-			options[2](); //manual callback
+			callback(); //manual callback
 			return;
 		}
 
-		var instance = retrieve(property);
+		if (parser){
+			var instance = retrieve(property);
+			from = getters[property].call(element); to = parsers[property](value);
+			if (from == null) throw 'could not read ' + property;
+			if (to == null) throw 'no valid value for ' + property;
 
-		from = getters[property].call(element); to = parsers[property](value);
-		if (from == null) throw 'could not read the ' + property + ' property';
-		if (to == null) throw 'no valid value supplied for the ' + property + ' property';
-
-		instance.options.apply(null, options);
-		instance.start(from, to);
+			instance.options.apply(null, options);
+			instance.start(from, to);
+		} else callback();
 	};
 	
 	this.stop = function(property){
-		retrieve(property).stop();
+		var instance = instances[property];
+		if (instance) instance.stop();
 	};
 	
 	this.starts = function(styles, options){
@@ -547,8 +550,13 @@ var animations = {}, animation = function(element){
 	
 	this.set = function(property, value){
 		property = camelize(property);
-		retrieve(property).stop();
-		setters[property].call(element, value);
+		var setter = setters[property];
+		// if (!setter) throw 'no setter found for ' + property;
+		if (setter){
+			var instance = instances[property];
+			if (instance) instance.stop();
+			setter.call(element, value);
+		}
 	};
 	
 	this.sets = function(styles){
@@ -557,7 +565,9 @@ var animations = {}, animation = function(element){
 	
 	this.get = function(property){
 		property = camelize(property);
-		return getters[property].call(element);
+		var getter = getters[property];
+		// if (!getter) throw 'no getter found for ' + property;
+		return (getter) ? getter.call(element) : null;
 	};
 
 };

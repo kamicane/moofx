@@ -34,9 +34,9 @@ Requires an ES5 shim, such as [MooTools](http://mootools.net).
 
 µ(element).fx(styles, {duration: "5000ms", equation: 'cubic-bezier(0.17,0.67,0.83,0.67)'}); //5s duration, cubic-bezier easing function
 
-µ(element).fx(styles, {duration: "5s", equation: 'cubic-bezier(0,1,1,0)'}); //5s duration, cubic-bezier easing function
+µ(element).fx(styles, {duration: "5s", equation: 'ease-in'}); //5s duration, cubic-bezier easing function
 
-µ(element).fx(styles, {duration: "5s", equation: 'cubic-bezier(0,1,1,0)', callback: function(){ //5s duration, cubic-bezier easing function, completion callback
+µ(element).fx(styles, {duration: "5s", equation: 'ease-in-out', callback: function(){ //5s duration, cubic-bezier easing function, completion callback
 	console.log('animated');
 }});
 ```
