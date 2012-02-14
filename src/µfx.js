@@ -232,50 +232,49 @@ parser('backgroundPosition', function(value){
 
 var CSSTransform, transform = 'transform', transforms = ['MozTransform', 'WebkitTransform', 'OTransform', 'msTransform', transform];
 
-for (var i = 0; i < transforms.length; i++){
-	var t = transforms[i];
-	if (html.style[t] != null){
-		CSSTransform = t;
-		break;
-	}
+for (var i = 0, item; item = transforms[i]; i++) if (html.style[item] != null){
+	CSSTransform = item
+	break;
 }
 
-if (CSSTransform){
+var transformOrigin = transform + 'Origin';
 
-	var CSSTransformOrigin = CSSTransform + 'Origin', transformOrigin = transform + 'Origin';
+parsers[transform] = function(value){
+	value = value.match(/\w+\s?\([-,.\w\s]+\)/g);
+	var transforms = {translate: '0px,0px', rotate: '0deg', scale: '1,1', skew: '0deg,0deg'};
+	if (value) value.forEach(function(v){
+		v = v.replace(/\s+/g, '').match(/^(translate|scale|rotate|skew)\((.*)\)$/);
+		if (!v) return;
+		var name = v[1], values = v[2].split(',');
+		switch(name){
+			case 'translate':
+				if (values.length < 2) return;
+				transforms[name] = values.map(px)/*.join(',')*/;
+			break;
+			case 'scale':
+				if (values.length == 1) values = [values[0], values[0]];
+				transforms[name] = values.map(number)/*.join(',')*/;
+			break;
+			case 'rotate': transforms[name] = number(values[0]) + 'deg'; break;
+			case 'skew':
+				if (values.length == 1) return;
+				transforms[name] = values.map(function(v){
+					return number(v) + 'deg';
+				})/*.join(',')*/; 
+			break;
+		}
+	});
+
+	return ['translate', 'rotate', 'scale', 'skew'].map(function(name){
+		return name + '(' + transforms[name] + ')';
+	}).join(' ');
+};
+
+if (CSSTransform){
+	
+	var CSSTransformOrigin = CSSTransform + 'Origin';
 	
 	browserTable[transform] = CSSTransform;
-	
-	parsers[transform] = function(value){
-		value = value.match(/\w+\s?\([-,.\w\s]+\)/g);
-		var transforms = {translate: '0px,0px', rotate: '0deg', scale: '1,1', skew: '0deg,0deg'};
-		if (value) value.forEach(function(v){
-			v = v.replace(/\s+/g, '').match(/^(translate|scale|rotate|skew)\((.*)\)$/);
-			if (!v) return;
-			var name = v[1], values = v[2].split(',');
-			switch(name){
-				case 'translate':
-					if (values.length < 2) return;
-					transforms[name] = values.map(px)/*.join(',')*/;
-				break;
-				case 'scale':
-					if (values.length == 1) values = [values[0], values[0]];
-					transforms[name] = values.map(number)/*.join(',')*/;
-				break;
-				case 'rotate': transforms[name] = number(values[0]) + 'deg'; break;
-				case 'skew':
-					if (values.length == 1) return;
-					transforms[name] = values.map(function(v){
-						return number(v) + 'deg';
-					})/*.join(',')*/; 
-				break;
-			}
-		});
-		
-		return ['translate', 'rotate', 'scale', 'skew'].map(function(name){
-			return name + '(' + transforms[name] + ')';
-		}).join(' ');
-	};
 	
 	setters[transform] = function(value){
 		this.style[CSSTransform] = parsers[transform](value);
@@ -284,14 +283,23 @@ if (CSSTransform){
 	getters[transform] = function(){
 		return parsers[transform](this.style[CSSTransform]);
 	};
+	
+	setters[transformOrigin] = function(v){
+		this.style[CSSTransformOrigin] = string(v);
+	};
 
 	getters[transformOrigin] = function(){
 		return computedStyle(this)(CSSTransformOrigin);
 	};
 
-	setters[transformOrigin] = function(v){
-		this.style[CSSTransformOrigin] = string(v);
+} else {
+
+	setters[transform] = function(){};
+	getters[transform] = function(){
+		return parsers[transform]('');
 	};
+	setters[transformOrigin] = function(){};
+	getters[transformOrigin] = function(){};
 
 }
 
@@ -309,21 +317,29 @@ parser('backgroundSize', px);
 	
 })();
 
-//transition detection (@kamicane)
+// animation options parser
 
-var Property = 'Property', Duration = 'Duration', TimingFunction = 'TimingFunction',
-	CSSTransition, transitions = ['WebkitTransition', 'transition'];
+var parseDuration = function(value){
+	var match = value.toString().match(/([\d.]+)(s|ms)/);
+	if (!match) return null;
+	var time = number(match[1]), unit = match[2];
+	if (unit == 's') return time * 1000;
+	else if (unit == 'ms') return time;
+}, parseEquation = function(equation){
+	equation = equations[equation] || equation;
+	var match = equation.replace(/\s+/g, '').match(/^cubic-bezier\(([\d.]+),([\d.]+),([\d.]+),([\d.]+)\)$/);
+	return (match) ? match.slice(1).map(number) : null;
+};
 
-for (var i = 0; i < transitions.length; i++){
-	
-	var p = transitions[i];
-	if (html.style[p] != null){
-		CSSTransition = p;
-		break;
-	}
-}
+var equations = {
+	'default': 'cubic-bezier(0.25, 0.1, 0.25, 1.0)',
+	'linear': 'cubic-bezier(0, 0, 1, 1)',
+	'ease-in': 'cubic-bezier(0.42, 0, 1.0, 1.0)',
+	'ease-out': 'cubic-bezier(0, 0, 0.58, 1.0)',
+	'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1.0)'
+};
 
-var CSSTransitionEnd = (CSSTransition == 'MozTransition') ? 'transitionend' : 'webkitTransitionEnd';
+equations.ease = equations['default'];
 
 // bezier solver (@arian)
 
@@ -362,28 +378,6 @@ var numbers = function(s){
 	});
 	return [numbers, replaced];
 };
-
-var parseDuration = function(value){
-	var match = value.toString().match(/([\d.]+)(s|ms)/);
-	if (!match) return null;
-	var time = number(match[1]), unit = match[2];
-	if (unit == 's') return time * 1000;
-	else if (unit == 'ms') return time;
-}, parseEquation = function(equation){
-	equation = equations[equation] || equation;
-	var match = equation.replace(/\s+/g, '').match(/^cubic-bezier\(([\d.]+),([\d.]+),([\d.]+),([\d.]+)\)$/);
-	return (match) ? match.slice(1).map(number) : null;
-};
-
-var equations = {
-	'default': 'cubic-bezier(0.25, 0.1, 0.25, 1.0)',
-	'linear': 'cubic-bezier(0, 0, 1, 1)',
-	'ease-in': 'cubic-bezier(0.42, 0, 1.0, 1.0)',
-	'ease-out': 'cubic-bezier(0, 0, 0.58, 1.0)',
-	'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1.0)'
-};
-
-equations.ease = equations['default'];
 
 // jsAnimation (@kamicane)
 
@@ -424,6 +418,18 @@ var jsAnimation = function(element, property){
 	};
 
 };
+
+//transition detection (@kamicane)
+
+var Property = 'Property', Duration = 'Duration', TimingFunction = 'TimingFunction',
+	CSSTransition, transitions = ['WebkitTransition', 'transition'];
+
+for (var i = 0, item; item = transitions[i]; i++) if (html.style[item] != null){
+	CSSTransition = item;
+	break;
+}
+
+var CSSTransitionEnd = (CSSTransition == 'MozTransition') ? 'transitionend' : 'webkitTransitionEnd';
 
 // cssAnimation (@kamicane)
 
@@ -509,9 +515,9 @@ var animations = {}, animation = function(element){
 
 	this.start = function(property, value, options, parsed){
 		property = camelize(property);
-		
 		var parser = parsers[property];
-		// if (!parser) throw 'no parser found for ' + property;
+		if (!parser) throw 'no parser found for ' + property;
+
 		if (!parsed) options = parseOptions(options);
 
 		var duration = options[0], callback = options[2];
@@ -522,15 +528,13 @@ var animations = {}, animation = function(element){
 			return;
 		}
 
-		if (parser){
-			var instance = retrieve(property);
-			from = getters[property].call(element); to = parsers[property](value);
-			if (from == null) throw 'could not read ' + property;
-			if (to == null) throw 'no valid value for ' + property;
+		var instance = retrieve(property),
+			from = getters[property].call(element), to = parsers[property](value);
+		if (from == null) throw 'could not read ' + property;
+		if (to == null) throw 'no valid value for ' + property;
 
-			instance.options.apply(null, options);
-			instance.start(from, to);
-		} else callback();
+		instance.options.apply(null, options);
+		instance.start(from, to);
 	};
 	
 	this.stop = function(property){
@@ -551,12 +555,10 @@ var animations = {}, animation = function(element){
 	this.set = function(property, value){
 		property = camelize(property);
 		var setter = setters[property];
-		// if (!setter) throw 'no setter found for ' + property;
-		if (setter){
-			var instance = instances[property];
-			if (instance) instance.stop();
-			setter.call(element, value);
-		}
+		if (!setter) throw 'no setter found for ' + property;
+		var instance = instances[property];
+		if (instance) instance.stop();
+		setter.call(element, value);
 	};
 	
 	this.sets = function(styles){
@@ -566,8 +568,8 @@ var animations = {}, animation = function(element){
 	this.get = function(property){
 		property = camelize(property);
 		var getter = getters[property];
-		// if (!getter) throw 'no getter found for ' + property;
-		return (getter) ? getter.call(element) : null;
+		if (!getter) throw 'no getter found for ' + property;
+		return getter.call(element);
 	};
 
 };
