@@ -54,7 +54,7 @@ Requires an ES5 shim, such as [MooTools](http://mootools.net).
 µ(element).style(property); //getter
 ```
 
-### copy & paste this if you don't know how to do µ (it's  ⌘+m on macs)
+### copy & paste this if you don't know how to do µ (it's  ⌥+m on macs)
 
 ```javascript
 var mu = µ;
