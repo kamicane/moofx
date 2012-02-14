@@ -233,7 +233,7 @@ parser('backgroundPosition', function(value){
 var CSSTransform, transform = 'transform', transforms = ['MozTransform', 'WebkitTransform', 'OTransform', 'msTransform', transform];
 
 for (var i = 0, item; item = transforms[i]; i++) if (html.style[item] != null){
-	CSSTransform = item
+	CSSTransform = item;
 	break;
 }
 
