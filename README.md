@@ -1,8 +1,9 @@
-# moofx 3 (µfx)
+# moofx 3 (µ›2.8.7α)
 
-broken alpha version 2.8.7
+moofx3 is a css3 enabled javascript animation library.
+moofx3 uses css3 transitions whenever available, falls back to normal javascript animation otherwise.
 
-## usage
+## API
 
 ### animate.
 
@@ -45,9 +46,10 @@ broken alpha version 2.8.7
 ```javascript
 var mu = µ;
 ```
-### build.
 
-download packager [packager](https://github.com/kamicane/packager)
+## build.
+
+download [packager](https://github.com/kamicane/packager)
 
 ```
 ./packager register /path/to/moofx
