@@ -1,11 +1,24 @@
-# moofx 3 (µ›2.8.7α)
+# moofx 3 (µ » 2.8.7α)
 
 moofx3 is a css3 enabled javascript animation library.
-moofx3 uses css3 transitions whenever available, falls back to normal javascript animation otherwise.
+
+Requires an ES5 shim, such as [MooTools](http://mootools.net).
+
+## features
+
+ - uses css3 transitions whenever available, falls back to normal javascript animation otherwise.
+ - supports hsl colors for color-based properties such as `color` (duh).
+ - supports transform animations in webkit browsers, firefox and ie9+.
+ - also contains a very useful computedStyle normalizer.
+ - framework agnostic. can be used in conjunction with your favorite js framework, which is [MooTools](http://mootools.net).
+ - cross browser (not sure exactly which browsers just yet).
+ - uses utf-8 characters in the source code.
+ - small footprint (less than 10k compressed).
+ - animation state is entirely managed by moofx.
 
 ## API
 
-### animate.
+### animate
 
 ```javascript
 
@@ -28,7 +41,7 @@ moofx3 uses css3 transitions whenever available, falls back to normal javascript
 }});
 ```
 	
-### style.
+### style
 
 ```javascript
 
@@ -41,13 +54,13 @@ moofx3 uses css3 transitions whenever available, falls back to normal javascript
 µ(element).style(property); //getter
 ```
 
-### can't type utf8? copy and paste.
+### copy & paste this if you don't know how to do µ (it's  ⌘+m on macs)
 
 ```javascript
 var mu = µ;
 ```
 
-## build.
+## build
 
 download [packager](https://github.com/kamicane/packager)
 
