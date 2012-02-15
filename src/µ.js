@@ -1,6 +1,7 @@
 /*
 ---
-provides: µ
+provides: moo
+description: stupid namespace / nodes wrapper
 author: "[Valerio Proietti](http://mad4milk.net)"
 license: "[MIT](http://mootools.net/license.txt)"
 ...
@@ -8,25 +9,18 @@ license: "[MIT](http://mootools.net/license.txt)"
 
 (function(){
 
-var instances = {}, UID = 0, µi = function(node){
-	if (typeof node == 'string') node = µi.querySelector(node);
-	if (!node || node.nodeType != 1) return null;
-	var uid = node.µid || (node.µid = (UID++).toString(36));
-	return instances[uid] || (instances[uid] = new µ(node));
-}, µ = function(node){
+var m = function(nodes){
+	if (nodes == null) return null;
+	return new moo((nodes.length == 'number') ? nodes : [nodes]);
+}, moo = function(n){
 	this.valueOf = function(){
-		return node;
+		return n;
 	};
 };
 
-µi.prototype = µ.prototype;
+m.prototype = moo.prototype;
+m.version = '2.8.7';
 
-µi.querySelector = function(selector){
-	return document.querySelector(selector);
-};
-
-µi.version = '2.8.7';
-
-window.µ = µi;
+window.moo = m;
 
 })();
