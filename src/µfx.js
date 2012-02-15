@@ -78,7 +78,7 @@ var px = function(value){
 }, rgba = function(value){
 	if (!value) value = '#000';
 	else if (value == 'transparent') value = '#00000000';
-	var c = µ.color(value, true);
+	var c = moo.color(value, true);
 	if (!c) c = [0, 0, 0, 1];
 	return 'rgba('+ [c[0], c[1], c[2], c[3]]/*.join(',')*/ + ')';
 };
@@ -97,7 +97,7 @@ trbl.forEach(function(d){
 
 	parser(bdc, rgba);
 	setters[bdc] = function(v){
-		this.style[bdc] = µ.color(v);
+		this.style[bdc] = moo.color(v);
 	};
 	
 	parser(border + d + 'Style', function(value){
@@ -179,7 +179,7 @@ trbl.forEach(function(d){
 ['color', 'backgroundColor'].forEach(function(name){
 	parser(name, rgba);
 	setters[name] = function(v){
-		this.style[name] = µ.color(v);
+		this.style[name] = moo.color(v);
 	};
 });
 
@@ -317,30 +317,6 @@ parser('backgroundSize', px);
 	
 })();
 
-// animation options parser
-
-var parseDuration = function(value){
-	var match = value.toString().match(/([\d.]+)(s|ms)/);
-	if (!match) return null;
-	var time = number(match[1]), unit = match[2];
-	if (unit == 's') return time * 1000;
-	else if (unit == 'ms') return time;
-}, parseEquation = function(equation){
-	equation = equations[equation] || equation;
-	var match = equation.replace(/\s+/g, '').match(/^cubic-bezier\(([\d.]+),([\d.]+),([\d.]+),([\d.]+)\)$/);
-	return (match) ? match.slice(1).map(number) : null;
-};
-
-var equations = {
-	'default': 'cubic-bezier(0.25, 0.1, 0.25, 1.0)',
-	'linear': 'cubic-bezier(0, 0, 1, 1)',
-	'ease-in': 'cubic-bezier(0.42, 0, 1.0, 1.0)',
-	'ease-out': 'cubic-bezier(0, 0, 0.58, 1.0)',
-	'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1.0)'
-};
-
-equations.ease = equations['default'];
-
 // bezier solver (@arian)
 
 var bezier = function(x1, y1, x2, y2, n, epsilon){
@@ -395,7 +371,7 @@ var jsAnimation = function(element, property){
 			tpl = tpl.replace('@', (t != f) ? compute(f, t, delta) : t);
 		});
 		setters[property].call(element, tpl);
-		(factor != 1) ? µ.frame.request(step) : callback();
+		(factor != 1) ? moo.frame.request(step) : callback();
 	}, from, to, template, time;
 
 	var start = this.start = function(_from, _to){
@@ -405,10 +381,10 @@ var jsAnimation = function(element, property){
 			var from_ = numbers(_from), to_ = numbers(_to);
 			if (from_[0].length != to_[0].length) throw 'mismatch from and to lengths for the ' + property + ' property.';
 			from = from_[0]; to = to_[0]; template = to_[1];
-			µ.frame.request(step);
-		} else callback();
+			moo.frame.request(step);
+		} else moo.frame.request(callback);
 	}, stop = this.stop = function(){
-		µ.frame.cancel(step);
+		moo.frame.cancel(step);
 	}, options = this.options = function(d, e, c){
 		duration = d; callback = c;
 		var es = e.toString(), bd = es + '@' + duration;
@@ -480,112 +456,143 @@ var cssAnimation = function(element, property){
 	var start = this.start = function(from, _to){
 		stop();
 		to = _to;
-		(from != to) ? µ.frame.request(defer) : callback();
+		moo.frame.request((from != to) ? defer : callback);
 	}, stop = this.stop = function(){
 		if (running){
 			running = false;
 			setters[property].call(element, getters[property].call(element));
 			clean();
-		} else µ.frame.cancel(defer);
+		} else moo.frame.cancel(defer);
 	}, options = this.options = function(d, e, c){
 		duration = d + 'ms'; equation = 'cubic-bezier(' + e/*.join(',')*/ + ')'; callback = c;
 	};
 
 };
 
-var animations = {}, animation = function(element){
-	var uid = element.µid, self = animations[uid];
-	if (self) return self;
-	else animations[uid] = this;
-	
-	var instances = {}, parseOptions = function(options){
-		options = options || {};
-		
-		var duration = parseDuration(options.duration || '500ms'),
-			equation = parseEquation(options.equation || 'default'),
-			callback = options.callback || function(){};
-			
-		if (!equation) throw 'invalid equation supplied';
-		if (duration == null) throw 'invalid duration supplied';
+// helpers
 
-		return [duration, equation, callback];
-	}, retrieve = function(property){
-		return instances[property] || (instances[property] = (CSSTransition) ? new cssAnimation(element, property) : new jsAnimation(element, property));
+var equations = {
+	'default': 'cubic-bezier(0.25, 0.1, 0.25, 1.0)',
+	'linear': 'cubic-bezier(0, 0, 1, 1)',
+	'ease-in': 'cubic-bezier(0.42, 0, 1.0, 1.0)',
+	'ease-out': 'cubic-bezier(0, 0, 0.58, 1.0)',
+	'ease-in-out': 'cubic-bezier(0.42, 0, 0.58, 1.0)'
+};
+
+equations.ease = equations['default'];
+
+var parseDuration = function(value){
+	var match = value.toString().match(/([\d.]+)(s|ms)/);
+	if (!match) return null;
+	var time = number(match[1]), unit = match[2];
+	if (unit == 's') return time * 1000;
+	else if (unit == 'ms') return time;
+}, parseEquation = function(equation){
+	equation = equations[equation] || equation;
+	var match = equation.replace(/\s+/g, '').match(/^cubic-bezier\(([\d.]+),([\d.]+),([\d.]+),([\d.]+)\)$/);
+	return (match) ? match.slice(1).map(number) : null;
+}, parseOptions = function(options){
+	options = options || {};
+
+	var duration = parseDuration(options.duration || '500ms'),
+		equation = parseEquation(options.equation || 'default'),
+		callback = options.callback || function(){};
+	
+	if (!equation) throw 'invalid equation supplied';
+	if (duration == null) throw 'invalid duration supplied';
+
+	return [duration, equation, callback];
+};
+
+var UID = 0, animations = {}, retrieveAnimation = function(node, property){
+	var uid = node.µid || (node.µid = UID++), animation = animations[uid] || (animations[uid] = {});
+	return animation[property] || (animation[property] = (CSSTransition) ? new cssAnimation(node, property) : new jsAnimation(node, property));
+}, stopAnimation = function(node, property){
+	var animation = animations[node.µid], instance;
+	if (animation && (instance = animation[property])) instance.stop();
+};
+
+var startAnimationStyles = function(nodes, styles, options){
+	options = parseOptions(options);
+	var duration = options[0], callback = options[2];
+
+	if (duration == 0){ //duration zero check;
+		this.set(styles);
+		callback(); //manual callback
+		return;
+	}
+
+	var completed = 0, length = 0, check = function(){
+		if (++completed == length) callback();
 	};
 
-	this.start = function(property, value, options, parsed){
-		property = camelize(property);
-		var parser = parsers[property];
-		if (!parser) throw 'no parser found for ' + property;
+	options[2] = check;
 
-		if (!parsed) options = parseOptions(options);
+	for (var i = 0, node; node = nodes[i]; i++){
 
-		var duration = options[0], callback = options[2];
+		for (var property in styles){
+			var value = styles[property], parser = parsers[property = camelize(property)];
+			if (!parser) throw 'no parser found for ' + property;
 
-		if (duration == 0){ //duration zero check;
-			this.set(property, value);
-			callback(); //manual callback
-			return;
+			length++;
+
+			var instance = retrieveAnimation(node, property),
+				from = getters[property].call(node), to = parsers[property](value);
+			if (from == null) throw 'could not read ' + property;
+			if (to == null) throw 'no valid value for ' + property;
+			
+			instance.stop();
+			instance.options.apply(null, options);
+			instance.start(from, to);
 		}
 
-		var instance = retrieve(property),
-			from = getters[property].call(element), to = parsers[property](value);
-		if (from == null) throw 'could not read ' + property;
-		if (to == null) throw 'no valid value for ' + property;
-
-		instance.options.apply(null, options);
-		instance.start(from, to);
-	};
-	
-	this.stop = function(property){
-		var instance = instances[property];
-		if (instance) instance.stop();
-	};
-	
-	this.starts = function(styles, options){
-		options = parseOptions(options);
-		var p, callback = options[2], completed = 0, length = 0, check = function(){
-			if (++completed == length) callback();
-		};
-		options[2] = check;
-		for (p in styles) length++;
-		for (p in styles) this.start(p, styles[p], options, true);
-	};
-	
-	this.set = function(property, value){
-		property = camelize(property);
-		var setter = setters[property];
-		if (!setter) throw 'no setter found for ' + property;
-		var instance = instances[property];
-		if (instance) instance.stop();
-		setter.call(element, value);
-	};
-	
-	this.sets = function(styles){
-		for (var property in styles) this.set(property, styles[property]);
-	};
-	
-	this.get = function(property){
-		property = camelize(property);
-		var getter = getters[property];
-		if (!getter) throw 'no getter found for ' + property;
-		return getter.call(element);
-	};
+	}
 
 };
 
-µ.prototype.fx = function(A, B, C){
-	var anim = new animation(this.valueOf());
-	if (typeof A != 'string') anim.starts(A, B);
-	else anim.start(A, B, C);
+var startAnimationProperty = function(nodes, property, value, options){
+	var styles = {};
+	styles[property] = value;
+	return startAnimationStyles(nodes, styles, options);
+};
+
+var setStyles = function(nodes, styles){
+	for (var i = 0, node; node = nodes[i]; i++){
+		for (var property in styles){
+			var value = styles[property], setter = setters[property = camelize(property)];
+			if (!setter) throw 'no setter found for ' + property;
+			stopAnimation(node, property);
+			setter.call(node, setter);
+		}
+	}
+};
+
+var setStyle = function(nodes, property, value){
+	var styles = {};
+	styles[property] = value;
+	return setStyles(nodes, styles);
+};
+
+var getStyle = function(node, property){
+	var getter = getters[property = camelize(property)];
+	if (!getter) throw 'no getter found for ' + property;
+	return getter.call(nodes);
+};
+
+// public interface
+
+moo.prototype.fx = function(A, B, C){
+	var nodes = this.valueOf();
+	if (typeof A != 'string') startAnimationStyles(nodes, A, B);
+	else startAnimationProperty(nodes, A, B, C);
 	return this;
 };
 
-µ.prototype.style = function(A, B){
-	var anim = new animation(this.valueOf());
-	if (typeof A != 'string') anim.sets(A);
-	else if (arguments.length == 2) anim.set(A, B);
-	else if (arguments.length == 1) return anim.get(A);
+moo.prototype.style = function(A, B){
+	var nodes = this.valueOf();
+	if (typeof A != 'string') setStyles(nodes, A);
+	else if (arguments.length == 2) setStyle(nodes, A, B);
+	else if (arguments.length == 1) return getStyle(nodes[0], A);
 	return this;
 };
 
