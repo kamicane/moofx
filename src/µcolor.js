@@ -1,7 +1,7 @@
 /*
 ---
 provides: color
-requires: µ
+requires: moo
 author: "[Valerio Proietti](http://mad4milk.net)"
 license: "[MIT](http://mootools.net/license.txt)"
 ...
@@ -55,7 +55,7 @@ var round = Math.round, colors = {
 	return [r * 255, g * 255, b * 255, a];
 };
 	
-µ.color = function(input, array){
+moo.color = function(input, array){
 	input = input.replace(/\s+/g, '');
 	if (colors[input]) input = colors[input];
 	if (input.match(/^#[a-f0-9]{3,8}/)) input = HEXxRGB(input.replace('#', ''));

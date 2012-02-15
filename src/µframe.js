@@ -1,7 +1,7 @@
 /*
 ---
 provides: frame
-requires: µ
+requires: moo
 author: "[Valerio Proietti](http://mad4milk.net)"
 license: "[MIT](http://mootools.net/license.txt)"
 ...
@@ -15,16 +15,16 @@ var AnimationFrame = 'AnimationFrame', callbacks = [], running, loop = function(
 },
 
 requestAnimationFrame =
-this['request' + AnimationFrame] ||
-this['webkitRequest' + AnimationFrame] ||
-this['mozRequest' + AnimationFrame] ||
-this['oRequest' + AnimationFrame] ||
-this['msRequest' + AnimationFrame] ||
+window['request' + AnimationFrame] ||
+window['webkitRequest' + AnimationFrame] ||
+window['mozRequest' + AnimationFrame] ||
+window['oRequest' + AnimationFrame] ||
+window['msRequest' + AnimationFrame] ||
 function(callback){
 	return setTimeout(callback, 1000 / 60);
 };
 
-µ.frame = {
+moo.frame = {
 	request: function(callback){
 		callbacks.push(callback);
 		if (!running){
