@@ -25,7 +25,7 @@ var camelize = function(self){
 
 // computedStyle (@kamicane)
 
-var computedStyle = (this.getComputedStyle) ? function(element){
+var computedStyle = (window.getComputedStyle) ? function(element){
 	var computedStyle = getComputedStyle(element);
 	return function(property){
 		return (computedStyle) ? computedStyle.getPropertyValue(hyphenate(property)) : '';
@@ -576,7 +576,7 @@ var setStyle = function(nodes, property, value){
 var getStyle = function(node, property){
 	var getter = getters[property = camelize(property)];
 	if (!getter) throw 'no getter found for ' + property;
-	return getter.call(nodes);
+	return getter.call(node);
 };
 
 // public interface
