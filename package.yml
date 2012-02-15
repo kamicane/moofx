@@ -9,7 +9,7 @@ license: "[MIT License](http://mootools.net/license.txt)"
 copyright: "&copy; [Valerio Proietti](http://mad4milk.net)"
 
 sources:
-  - "src/µ.js"
-  - "src/µframe.js"
-  - "src/µcolor.js"
-  - "src/µfx.js"
+  - "src/moo.js"
+  - "src/mooframe.js"
+  - "src/moocolor.js"
+  - "src/moofx.js"

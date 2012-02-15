@@ -22,7 +22,7 @@ Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hs
 
 ### moo
 
-The `moo` method either accepts a collection of nodes (such as the return value of document.querySelectorAll) an array of nodes (such as the expected return value of every dom selector library available, such as Slick, or Sizzle).
+The `moo` method either accepts a collection of nodes (such as the return value of document.querySelectorAll) an array of nodes (such as the expected return value of every dom selector library available, such as Slick, or Sizzle), or a single node selected by whatever means.
 
 ```javascript
 
@@ -31,6 +31,7 @@ moo(document.querySelector('div#box'));
 moo(Slick.find('div#box'));
 moo(Slick.search('div.box'));
 moo(Sizzle('div.box'));
+moo(document.getElementById('box'));
 ```
 
 ### moo:fx
@@ -74,7 +75,7 @@ moo(node).style('background-color'); //get computed style for property
 
 ## build
 
-using [packager](https://github.com/kamicane/packager):
+You can build moofx3 using [packager](https://github.com/kamicane/packager):
 
 ```
 ./packager register /path/to/moofx
