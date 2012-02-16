@@ -41,40 +41,56 @@ var computedStyle = (window.getComputedStyle) ? function(element){
 
 var parsers = {}, getters = {}, setters = {}, html = document.documentElement, browserTable = {};
 
-var parser = function(key, fn, shorthand){
-	parsers[key] = fn;
-	basic(key, fn);
-}, setter = function(key, fn){
-	setters[key] = fn;
-}, getter = function(key, fn){
-	getters[key] = fn;
-}, basic = function(key, fn){
-	fn = fn || function(x){return x;};
-	getters[key] = function(){
-		return fn(computedStyle(this)(key));
-	};
-	setters[key] = function(value){
-		this.style[key] = fn(value);
-	};
+var getter = function(key){
+	if (!getters[key]){
+		var fn = parsers[key] || function(x){return x;};
+		getters[key] = function(){
+			return fn(computedStyle(this)(key));
+		};
+	}
+	return getters[key];
+}, setter = function(key){
+	if (!setters[key]){
+		var fn = parsers[key] || function(x){return x;};
+		setters[key] = function(value){
+			return this.style[key] = fn(value);
+		};
+	}
+	return setters[key];
 };
 
 (function(){
 
+var test = document.createElement('div');
+test.style.cssText = 'border: none; margin: 0; padding: 0; visibility: hidden; position: absolute; height: 0;';
+
+var pixel = function(element, n, u){
+	var parent = element.parentNode, ratio = 1;
+	if (parent){
+		test.style.width = 10 + u;
+		parent.appendChild(test);
+		ratio = test.offsetWidth / 10;
+		parent.removeChild(test);
+	};
+	return n * ratio;
+};
+
 var mirror4 = function(values){
 	var length = values.length;
 	if (length == 1) values.push(values[0], values[0], values[0]);
-	else if (length == 2) value.push(values[0], values[1]);
-	else if (length == 3) value.push(values[1]);
+	else if (length == 2) values.push(values[0], values[1]);
+	else if (length == 3) values.push(values[1]);
 	return values;
 };
 
-var px = function(value){
+var length = function(value){
 	var match = clean(string(value)).match(/^([-\d.]+)(%|px|em|pt)?$/);
 	if (!match) return null;
-	var n = number(match[1]), u = (n == 0) ? 'px' : match[2];
-	return n + (u || 'px');
-}, pxs = function(value){
-	return mirror4(clean(value).split(' ').map(px)).join(' ');
+	var n = number(match[1]), u = (n == 0 || !match[2]) ? 'px' : match[2], parent;
+	if (this.nodeType == 1 && u != 'px') return pixel(this, n, u) + 'px';
+	return n + u;
+}, lengths = function(value){
+	return mirror4(clean(value).split(' ').map(length, this)).join(' ');
 }, rgba = function(value){
 	if (!value) value = '#000';
 	else if (value == 'transparent') value = '#00000000';
@@ -83,80 +99,74 @@ var px = function(value){
 	return 'rgba('+ [c[0], c[1], c[2], c[3]]/*.join(',')*/ + ')';
 };
 
-var opacity = 'opacity', border = 'border', margin = 'margin', padding = 'padding',
+var lengthKeys = [], colorKeys = [], opacity = 'opacity', border = 'border', margin = 'margin', padding = 'padding',
 	trbl = ['Top', 'Right', 'Bottom', 'Left'], tlbl = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
 
 //marginDIR, paddingDIR, borderDIRWidth, borderDIRstyle, borderDIRColor
 
 trbl.forEach(function(d){
 	[margin + d, padding + d, border + d + 'Width', d.toLowerCase()].forEach(function(name){
-		parser(name, px);
+		lengthKeys.push(name);
 	});
 	
-	var bdc = border + d + 'Color';
-
-	parser(bdc, rgba);
-	setters[bdc] = function(v){
-		this.style[bdc] = moo.color(v);
-	};
+	colorKeys.push(border + d + 'Color');
 	
-	parser(border + d + 'Style', function(value){
+	parsers[border + d + 'Style'] = function(value){
 		return value.match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/) ? value : null;
-	});
+	};
 });
 
 //borderDIRRadius
 
 tlbl.forEach(function(d){
-	parser(border + d + 'Radius', px);
+	lengthKeys.push(border + d + 'Radius');
 });
 
 //width, height, fontSize, zIndex
 
-parser('width', px);
-parser('height', px);
-parser('fontSize', px);
-parser('zIndex', function(value){
+lengthKeys.push('width', 'height', 'fontSize', 'backgroundSize');
+
+parsers['zIndex'] = function(value){
 	return (value == 'auto') ? null : number(value);
-});
+};
 
 //margin, padding
 
 [margin, padding].forEach(function(name){
-	parser(name, pxs); //sh
+	parsers[name] = lengths; //sh
 	getters[name] = function(){
-		var rules = computedStyle(this);
 		return trbl.map(function(d){
-			return getters[name + d].call(this);
+			return getter(name + d).call(this);
 		}, this).join(' ');
 	};
 });
 
 //borderRadius
-
-parser(border + 'Radius', pxs); //sh
-getters.borderRadius = function(){
+var br = border + 'Radius';
+parsers[br] = lengths; //sh
+getters[br] = function(){
 	return tlbl.map(function(d){
-		return getters[border + d + 'Radius'].call(this);
+		return getter(border + d + 'Radius').call(this);
 	}, this).join(' ');
 };
 
 //borderWidth, borderStyle, BorderColor
 
-parser(border + 'Width', pxs); //sh
-parser(border + 'Style', function(value){
+parsers[border + 'Width'] = lengths; //sh
+
+parsers[border + 'Style'] = function(value){
 	return mirror4(clean(value).split(' ')).join(' ');
-}); //sh
-parser(border + 'Color', function(colors){
+}; //sh
+parsers[border + 'Color'] = function(colors){
 	colors = colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g);
 	if (!colors) colors = ["#000"];
 	return mirror4(colors.map(rgba)).join(' ');
-}); //sh
+}; //sh
 
 ['Width', 'Style', 'Color'].forEach(function(t){
 	getters[border + t] = function(){
 		return trbl.map(function(d){
-			return getters[border + d + t].call(this);
+			return getter(border + d + t).call(this);
 		}, this).join(' ');
 	};
 });
@@ -164,34 +174,30 @@ parser(border + 'Color', function(colors){
 //borderDIR
 
 trbl.forEach(function(d){
-	parser(border + d, function(value){
+	var bd = border + d;
+	parsers[bd] = function(value){
 		value = clean(value).match(/((?:[\d.]+)(?:px|em|pt)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/);
 		if (!value) value = [null, '0px'];
-		return [parsers[border + d + 'Width'](value[1]), parsers[border + d + 'Style'](value[2]), parsers[border + d + 'Color'](value[3])].join(' ');
-	}); //sh
+		return [parsers[bd + 'Width'].call(this, value[1]), parsers[bd + 'Style'](value[2]), parsers[bd + 'Color'](value[3])].join(' ');
+	}; //sh
 	getters[border + d] = function(){
-		return [getters[border + d + 'Width'].call(this), getters[border + d + 'Style'].call(this), getters[border + d + 'Color'].call(this)].join(' ');
+		return [getters(bd + 'Width').call(this), getter(bd + 'Style').call(this), getter(bd + 'Color').call(this)].join(' ');
 	};
 });
 
 //color, backgroundColor
 
-['color', 'backgroundColor'].forEach(function(name){
-	parser(name, rgba);
-	setters[name] = function(v){
-		this.style[name] = moo.color(v);
-	};
-});
+colorKeys.push('color', 'backgroundColor');
 
 //border
 
-parser(border, parsers[border + 'Top']); //sh
+parsers[border] = parsers[border + 'Top']; //sh
 
 getters[border] = function(){
 	var value, pvalue;
 	for (var i = 0; i < 4; i++){
 		var bd = border + trbl[i];
-		value = getters[bd].call(this);
+		value = getter(bd).call(this);
 		if (pvalue && value != pvalue) return null;
 		pvalue = value;
 	}
@@ -202,9 +208,7 @@ getters[border] = function(){
 
 var filterName = (html.style.MsFilter != null) ? 'MsFilter' : (html.style.filter != null) ? 'filter' : null;
 
-parser(opacity, function(v){
-	return string(v);
-});
+parsers[opacity] = string;
 
 if (html.style[opacity] == null && filterName){
 
@@ -226,9 +230,9 @@ if (html.style[opacity] == null && filterName){
 
 //backgroundPosition
 
-parser('backgroundPosition', function(value){
-	return clean(value).split(' ').map(px).join(' ');
-});
+parsers['backgroundPosition'] = function(value){
+	return clean(value).split(' ').map(length, this).join(' ');
+};
 
 var CSSTransform, transform = 'transform', transforms = ['MozTransform', 'WebkitTransform', 'OTransform', 'msTransform', transform];
 
@@ -249,7 +253,7 @@ parsers[transform] = function(value){
 		switch(name){
 			case 'translate':
 				if (values.length < 2) return;
-				transforms[name] = values.map(px)/*.join(',')*/;
+				transforms[name] = values.map(length, this)/*.join(',')*/;
 			break;
 			case 'scale':
 				if (values.length == 1) values = [values[0], values[0]];
@@ -263,7 +267,7 @@ parsers[transform] = function(value){
 				})/*.join(',')*/; 
 			break;
 		}
-	});
+	}, this);
 
 	return ['translate', 'rotate', 'scale', 'skew'].map(function(name){
 		return name + '(' + transforms[name] + ')';
@@ -305,13 +309,22 @@ if (CSSTransform){
 
 //misc
 
-basic('visibility'); basic('display'); basic('backgroundImage'); basic('position');
+lengthKeys.forEach(function(name){
+	parsers[name] = length;
+	setters[name] = function(v){
+		this.style[name] = length(v);
+	};
+	getters[name] = function(){
+		return length.call(this, computedStyle(this)(name));
+	};
+});
 
-parser('backgroundSize', px);
-
-// parser('clip', function(value){
-// 	value = value.replace(/\s+/g, '').match(/rect\((.*)\))/);
-// });
+colorKeys.forEach(function(name){
+	parsers[name] = rgba;
+	setters[name] = function(v){
+		this.style[name] = moo.color(v);
+	};
+});
 
 //TODO: [boxShadow, textShadow, clip]
 	
@@ -370,7 +383,7 @@ var jsAnimation = function(element, property){
 			var t = to[i];
 			tpl = tpl.replace('@', (t != f) ? compute(f, t, delta) : t);
 		});
-		setters[property].call(element, tpl);
+		setter(property).call(element, tpl);
 		(factor != 1) ? moo.frame.request(step) : callback();
 	}, from, to, template, time;
 
@@ -449,7 +462,7 @@ var cssAnimation = function(element, property){
 	}, defer = function(){
 		cleanTransitionCSS(true);
 		element.addEventListener(CSSTransitionEnd, complete, false);
-		setters[property].call(element, to);
+		setter(property).call(element, to);
 		running = true;
 	}, running, to;
 	
@@ -460,7 +473,7 @@ var cssAnimation = function(element, property){
 	}, stop = this.stop = function(){
 		if (running){
 			running = false;
-			setters[property].call(element, getters[property].call(element));
+			setter(property).call(element, getter(property).call(element));
 			clean();
 		} else moo.frame.cancel(defer);
 	}, options = this.options = function(d, e, c){
@@ -514,7 +527,7 @@ var UID = 0, animations = {}, retrieveAnimation = function(node, property){
 
 var startAnimationStyles = function(nodes, styles, options){
 	options = parseOptions(options);
-	var duration = options[0], callback = options[2];
+	var duration = options[0], callback = options[2], equation = options[1];
 
 	if (duration == 0){ //duration zero check;
 		this.set(styles);
@@ -525,28 +538,36 @@ var startAnimationStyles = function(nodes, styles, options){
 	var completed = 0, length = 0, check = function(){
 		if (++completed == length) callback();
 	};
+	
+	var clean = {};
+	
+	for (var property in styles){
+		var value = styles[property], parser = parsers[property = camelize(property)];
+		if (!parser) throw 'no parser found for ' + property;
+		clean[property] = value;
+	}
 
-	options[2] = check;
-
-	for (var i = 0, node; node = nodes[i]; i++){
-
-		for (var property in styles){
-			var value = styles[property], parser = parsers[property = camelize(property)];
-			if (!parser) throw 'no parser found for ' + property;
+	for (var i = 0, node; node = nodes[i]; i++) (function(node){
+		
+		for (var property in clean) (function(property, value){
 
 			length++;
 
 			var instance = retrieveAnimation(node, property),
-				from = getters[property].call(node), to = parsers[property](value);
+				from = getter(property).call(node), to = parsers[property].call(node, value);
 			if (from == null) throw 'could not read ' + property;
 			if (to == null) throw 'no valid value for ' + property;
 			
 			instance.stop();
-			instance.options.apply(null, options);
+			instance.options(duration, equation, function(){
+				setter(property).call(node, value);
+				check();
+			});
 			instance.start(from, to);
-		}
-
-	}
+			
+		})(property, clean[property]);
+		
+	})(node);
 
 };
 
@@ -559,10 +580,9 @@ var startAnimationProperty = function(nodes, property, value, options){
 var setStyles = function(nodes, styles){
 	for (var i = 0, node; node = nodes[i]; i++){
 		for (var property in styles){
-			var value = styles[property], setter = setters[property = camelize(property)];
-			if (!setter) throw 'no setter found for ' + property;
+			var value = styles[property], s = setter(property = camelize(property));
 			stopAnimation(node, property);
-			setter.call(node, setter);
+			s.call(node, value);
 		}
 	}
 };
@@ -574,9 +594,7 @@ var setStyle = function(nodes, property, value){
 };
 
 var getStyle = function(node, property){
-	var getter = getters[property = camelize(property)];
-	if (!getter) throw 'no getter found for ' + property;
-	return getter.call(node);
+	return getter(camelize(property)).call(node);
 };
 
 // public interface

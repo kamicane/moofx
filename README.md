@@ -1,4 +1,4 @@
-# moofx 3 (2.8.7α)
+# moofx 3 (2.8.8α)
 
 moofx3 is a css3 enabled, small footprinted javascript animation library.
 
@@ -18,7 +18,7 @@ Requires an ES5 shim, such as [MooTools](http://mootools.net).
 ## API
 
 Every property in moofx can either be provided camelized (`backgroundColor`) or hyphenated (`background-color`).
-Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hsl (`hsl(20,30,40)`), hsla (`hsla(20,30,40,0.5)`) hex (`#ffa`, `#ffaa00`), or hexa (`#ffaa00ff`, `#fa0f`)
+Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hsl (`hsl(20,30,40)`), hsla (`hsla(20,30,40,0.5)`) hex (`#ffa`, `#ffaa00`), or hexa (`#ffaa00ff`, `#fa0f`).
 
 ### moo
 

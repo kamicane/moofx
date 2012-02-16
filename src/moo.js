@@ -19,7 +19,7 @@ var m = function(nodes){
 };
 
 m.prototype = moo.prototype;
-m.version = '2.8.7';
+m.version = '2.8.8α';
 
 window.moo = m;
 
