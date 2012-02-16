@@ -43,28 +43,26 @@ var parsers = {}, getters = {}, setters = {}, html = document.documentElement, b
 
 var getter = function(key){
 	if (!getters[key]){
-		var fn = parsers[key] || function(x){return x;};
+		var parser = parsers[key] || CSSStringParser;
 		getters[key] = function(){
-			return fn(computedStyle(this)(key));
+			return new parser(computedStyle(this)(key)).toString(this);
 		};
 	}
 	return getters[key];
 }, setter = function(key){
 	if (!setters[key]){
-		var fn = parsers[key] || function(x){return x;};
+		var parser = parsers[key] || CSSStringParser;
 		setters[key] = function(value){
-			return this.style[key] = fn(value);
+			return this.style[key] = new parser(value).toString();
 		};
 	}
 	return setters[key];
 };
 
-(function(){
-
 var test = document.createElement('div');
 test.style.cssText = 'border: none; margin: 0; padding: 0; visibility: hidden; position: absolute; height: 0;';
 
-var pixel = function(element, n, u){
+var pixelRatio = function(element, u){
 	var parent = element.parentNode, ratio = 1;
 	if (parent){
 		test.style.width = 10 + u;
@@ -72,8 +70,62 @@ var pixel = function(element, n, u){
 		ratio = test.offsetWidth / 10;
 		parent.removeChild(test);
 	};
-	return n * ratio;
+	return ratio;
 };
+
+var CSSParser = function(parser, toString){
+	parser.prototype = Object.create(CSSParser.prototype);
+	parser.prototype.toString = toString;
+	return parser;
+};
+
+CSSParser.prototype.extract = function(){
+	return [this];
+};
+
+var CSSParsers = function(parsers){
+	this.parsers = parsers;
+};
+
+CSSParsers.prototype.toString = function(x){
+	return this.parsers.map(function(v){
+		return v.toString(x);
+	}).join(' ');
+};
+
+CSSParsers.prototype.extract = function(){
+	return this.parsers;
+};
+
+var CSSStringParser = CSSParser(function(value){ //string parser
+	this.value = string(value);
+}, function(){
+	return this.value;
+}), CSSNumberParser = CSSParser(function(value){ //number parser
+	this.value = number(value);
+}, function(){
+	return string(this.value);
+}), CSSLengthParser = CSSParser(function(value){ //length parser
+	if (value == 'auto') return new CSSStringParser('auto');
+	var match = clean(string(value)).match(/^([-\d.]+)(%|px|em|pt)?$/);
+	if (!match) return null;
+	this.value = number(match[1]);
+	this.unit = (this.value == 0 || !match[2]) ? 'px' : match[2];
+}, function(element){
+	if (element && this.unit != 'px') return (pixelRatio(element, this.unit) * this.value) + 'px';
+	return this.value + this.unit;
+}), CSSColorParser = CSSParser(function(value){ //color parser
+	if (!value) value = '#000';
+	else if (value == 'transparent') value = '#00000000';
+	var c = moo.color(value, true);
+	if (!c) c = [0, 0, 0, 1];
+	this.value = c;
+}, function(forceA){
+	if (!forceA && this.value[3] == 1) return 'rgb(' + [this.value[0], this.value[1], this.value[2]] + ')';
+	return 'rgba(' + this.value + ')';
+});
+
+(function(){
 
 var mirror4 = function(values){
 	var length = values.length;
@@ -83,57 +135,53 @@ var mirror4 = function(values){
 	return values;
 };
 
-var length = function(value){
-	var match = clean(string(value)).match(/^([-\d.]+)(%|px|em|pt)?$/);
-	if (!match) return null;
-	var n = number(match[1]), u = (n == 0 || !match[2]) ? 'px' : match[2], parent;
-	if (this.nodeType == 1 && u != 'px') return pixel(this, n, u) + 'px';
-	return n + u;
-}, lengths = function(value){
-	return mirror4(clean(value).split(' ').map(length, this)).join(' ');
-}, rgba = function(value){
-	if (!value) value = '#000';
-	else if (value == 'transparent') value = '#00000000';
-	var c = moo.color(value, true);
-	if (!c) c = [0, 0, 0, 1];
-	return 'rgba('+ [c[0], c[1], c[2], c[3]]/*.join(',')*/ + ')';
+var CSSLengthsParser = function(value){
+	return new CSSParsers(mirror4(clean(value).split(' ').map(function(v){
+		return new CSSLengthParser(v);
+	})));
 };
 
-var lengthKeys = [], colorKeys = [], opacity = 'opacity', border = 'border', margin = 'margin', padding = 'padding',
+var CSSBorderStyleParser = function(value){
+	return new CSSStringParser(value.match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/) ? value : 'none');
+};
+
+var opacity = 'opacity', border = 'border', margin = 'margin', padding = 'padding',
 	trbl = ['Top', 'Right', 'Bottom', 'Left'], tlbl = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+
+//color, backgroundColor
+
+parsers.color = parsers.backgroundColor = CSSColorParser;
+
+//width, height, fontSize, backgroundSize
+
+parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = CSSLengthParser;
 
 //marginDIR, paddingDIR, borderDIRWidth, borderDIRstyle, borderDIRColor
 
 trbl.forEach(function(d){
 	[margin + d, padding + d, border + d + 'Width', d.toLowerCase()].forEach(function(name){
-		lengthKeys.push(name);
+		parsers[name] = CSSLengthParser;
 	});
 	
-	colorKeys.push(border + d + 'Color');
+	parsers[border + d + 'Color'] = CSSColorParser;
 	
-	parsers[border + d + 'Style'] = function(value){
-		return value.match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/) ? value : null;
-	};
+	parsers[border + d + 'Style'] = CSSBorderStyleParser;
 });
 
 //borderDIRRadius
 
 tlbl.forEach(function(d){
-	lengthKeys.push(border + d + 'Radius');
+	parsers[border + d + 'Radius'] = CSSLengthParser;
 });
 
-//width, height, fontSize, zIndex
-
-lengthKeys.push('width', 'height', 'fontSize', 'backgroundSize');
-
 parsers['zIndex'] = function(value){
-	return (value == 'auto') ? null : number(value);
+	return (value == 'auto') ? new CSSStringParser('auto') : new CSSNumberParser(value);
 };
 
 //margin, padding
 
 [margin, padding].forEach(function(name){
-	parsers[name] = lengths; //sh
+	parsers[name] = CSSLengthsParser; //sh
 	getters[name] = function(){
 		return trbl.map(function(d){
 			return getter(name + d).call(this);
@@ -143,24 +191,27 @@ parsers['zIndex'] = function(value){
 
 //borderRadius
 var br = border + 'Radius';
-parsers[br] = lengths; //sh
+parsers[br] = CSSLengthsParser; //sh
 getters[br] = function(){
 	return tlbl.map(function(d){
 		return getter(border + d + 'Radius').call(this);
 	}, this).join(' ');
 };
 
-//borderWidth, borderStyle, BorderColor
+//borderWidth, borderStyle, borderColor
 
-parsers[border + 'Width'] = lengths; //sh
+parsers[border + 'Width'] = CSSLengthsParser; //sh
 
-parsers[border + 'Style'] = function(value){
-	return mirror4(clean(value).split(' ')).join(' ');
+parsers[border + 'Style'] = function(value){ // parser not needed?
+	return new CSSParsers(mirror4(clean(value).split(' ').map(CSSBorderStyleParser)));
 }; //sh
+
 parsers[border + 'Color'] = function(colors){
 	colors = colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g);
 	if (!colors) colors = ["#000"];
-	return mirror4(colors.map(rgba)).join(' ');
+	return new CSSParsers(mirror4(colors.map(function(c){
+		return new CSSColorParser(c);
+	})));
 }; //sh
 
 ['Width', 'Style', 'Color'].forEach(function(t){
@@ -175,19 +226,15 @@ parsers[border + 'Color'] = function(colors){
 
 trbl.forEach(function(d){
 	var bd = border + d;
-	parsers[bd] = function(value){
+	parsers[bd] = function(value, element){
 		value = clean(value).match(/((?:[\d.]+)(?:px|em|pt)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/);
 		if (!value) value = [null, '0px'];
-		return [parsers[bd + 'Width'].call(this, value[1]), parsers[bd + 'Style'](value[2]), parsers[bd + 'Color'](value[3])].join(' ');
+		return new CSSParsers(new CSSLengthParser(value[1]), new CSSBorderStyleParser(value[2]), new CSSColorParser(value[3]));
 	}; //sh
-	getters[border + d] = function(){
+	getters[bd] = function(){
 		return [getters(bd + 'Width').call(this), getter(bd + 'Style').call(this), getter(bd + 'Color').call(this)].join(' ');
 	};
 });
-
-//color, backgroundColor
-
-colorKeys.push('color', 'backgroundColor');
 
 //border
 
@@ -208,7 +255,7 @@ getters[border] = function(){
 
 var filterName = (html.style.MsFilter != null) ? 'MsFilter' : (html.style.filter != null) ? 'filter' : null;
 
-parsers[opacity] = string;
+parsers[opacity] = CSSNumberParser;
 
 if (html.style[opacity] == null && filterName){
 
@@ -228,11 +275,7 @@ if (html.style[opacity] == null && filterName){
 
 }
 
-//backgroundPosition
-
-parsers['backgroundPosition'] = function(value){
-	return clean(value).split(' ').map(length, this).join(' ');
-};
+// transform
 
 var CSSTransform, transform = 'transform', transforms = ['MozTransform', 'WebkitTransform', 'OTransform', 'msTransform', transform];
 
@@ -241,10 +284,8 @@ for (var i = 0, item; item = transforms[i]; i++) if (html.style[item] != null){
 	break;
 }
 
-var transformOrigin = transform + 'Origin';
-
-parsers[transform] = function(value){
-	value = value.match(/\w+\s?\([-,.\w\s]+\)/g);
+var CSSTransformParser = CSSParser(function(value){
+	value = clean(value).match(/\w+\s?\([-,.\w\s]+\)/g);
 	var transforms = {translate: '0px,0px', rotate: '0deg', scale: '1,1', skew: '0deg,0deg'};
 	if (value) value.forEach(function(v){
 		v = v.replace(/\s+/g, '').match(/^(translate|scale|rotate|skew)\((.*)\)$/);
@@ -253,7 +294,9 @@ parsers[transform] = function(value){
 		switch(name){
 			case 'translate':
 				if (values.length < 2) return;
-				transforms[name] = values.map(length, this)/*.join(',')*/;
+				transforms[name] = values.map(function(v){
+					return number(v) + 'px';
+				})/*.join(',')*/;
 			break;
 			case 'scale':
 				if (values.length == 1) values = [values[0], values[0]];
@@ -268,65 +311,40 @@ parsers[transform] = function(value){
 			break;
 		}
 	}, this);
+	
+	this.transforms = transforms;
 
+}, function(){
 	return ['translate', 'rotate', 'scale', 'skew'].map(function(name){
-		return name + '(' + transforms[name] + ')';
-	}).join(' ');
-};
+		var value = this.transforms[name];
+		return name + '(' + value + ')';
+	}, this).join(' ');
+});
+
+parsers[transform] = CSSTransformParser;
 
 if (CSSTransform){
-	
-	var CSSTransformOrigin = CSSTransform + 'Origin';
 	
 	browserTable[transform] = CSSTransform;
 	
 	setters[transform] = function(value){
-		this.style[CSSTransform] = parsers[transform](value);
+		this.style[CSSTransform] = CSStransformParser(value).toString();
 	};
 
 	getters[transform] = function(){
-		return parsers[transform](this.style[CSSTransform]);
-	};
-	
-	setters[transformOrigin] = function(v){
-		this.style[CSSTransformOrigin] = string(v);
-	};
-
-	getters[transformOrigin] = function(){
-		return computedStyle(this)(CSSTransformOrigin);
+		return CSSTransformParser(this.style[CSSTransform]).toString();
 	};
 
 } else {
 
 	setters[transform] = function(){};
 	getters[transform] = function(){
-		return parsers[transform]('');
+		return CSSTransformParser().toString();
 	};
-	setters[transformOrigin] = function(){};
-	getters[transformOrigin] = function(){};
 
 }
 
-//misc
-
-lengthKeys.forEach(function(name){
-	parsers[name] = length;
-	setters[name] = function(v){
-		this.style[name] = length(v);
-	};
-	getters[name] = function(){
-		return length.call(this, computedStyle(this)(name));
-	};
-});
-
-colorKeys.forEach(function(name){
-	parsers[name] = rgba;
-	setters[name] = function(v){
-		this.style[name] = moo.color(v);
-	};
-});
-
-//TODO: [boxShadow, textShadow, clip]
+//TODO: [boxShadow, textShadow, clip, transformOrigin, backgroundPosition]
 	
 })();
 
@@ -372,7 +390,7 @@ var numbers = function(s){
 
 var jsAnimation = function(element, property){
 	
-	var duration, equation, callback, compute = function(from, to, delta){
+	var set = setter(property), duration, equation, callback, compute = function(from, to, delta){
 		return (to - from) * delta + from;
 	}, step = function(now){
 		if (!time) time = now;
@@ -383,7 +401,7 @@ var jsAnimation = function(element, property){
 			var t = to[i];
 			tpl = tpl.replace('@', (t != f) ? compute(f, t, delta) : t);
 		});
-		setter(property).call(element, tpl);
+		set.call(element, tpl);
 		(factor != 1) ? moo.frame.request(step) : callback();
 	}, from, to, template, time;
 
@@ -411,7 +429,7 @@ var jsAnimation = function(element, property){
 //transition detection (@kamicane)
 
 var Property = 'Property', Duration = 'Duration', TimingFunction = 'TimingFunction',
-	CSSTransition, transitions = ['WebkitTransition', 'transition'];
+	CSSTransition, transitions = ['WebkitTransition', 'MozTransition', 'transition'];
 
 for (var i = 0, item; item = transitions[i]; i++) if (html.style[item] != null){
 	CSSTransition = item;
@@ -424,21 +442,25 @@ var CSSTransitionEnd = (CSSTransition == 'MozTransition') ? 'transitionend' : 'w
 
 var cssAnimation = function(element, property){
 	
-	var hproperty = hyphenate(browserTable[property] || property);
+	var hproperty = hyphenate(browserTable[property] || property),
+		get = getter(property), set = setter(property),
 	
-	var duration, equation, callback, cleanTransitionCSS = function(include){
+	duration, equation, callback, removeProp = function(prop, a, b, c){
+		var io = a.indexOf(prop);
+		if (io != -1){
+			a.splice(io, 1);
+			b.splice(io, 1);
+			c.splice(io, 1);
+		}
+	}, cleanTransitionCSS = function(include){
 		var rules = computedStyle(element);
 		
 		var p = rules(CSSTransition + Property).replace(/\s+/g, '').split(','),
 			d = rules(CSSTransition + Duration).replace(/\s+/g, '').split(','),
 			e = rules(CSSTransition + TimingFunction).replace(/\s+/g, '').match(/cubic-bezier\(([\d.,]+)\)/g);
-
-		var io = p.indexOf(hproperty);
-		if (io != -1){
-			p.splice(io, 1);
-			d.splice(io, 1);
-			e.splice(io, 1);
-		}
+			
+		removeProp('all', p, d, e);
+		removeProp(hproperty, p, d, e);
 		
 		if (include){
 			p.push(hproperty);
@@ -460,20 +482,20 @@ var cssAnimation = function(element, property){
 			clean();
 		}
 	}, defer = function(){
+		running = true;
 		cleanTransitionCSS(true);
 		element.addEventListener(CSSTransitionEnd, complete, false);
-		setter(property).call(element, to);
-		running = true;
+		set.call(element, to);
 	}, running, to;
 	
 	var start = this.start = function(from, _to){
 		stop();
 		to = _to;
 		moo.frame.request((from != to) ? defer : callback);
-	}, stop = this.stop = function(){
+	}, stop = this.stop = function(halt){
 		if (running){
 			running = false;
-			setter(property).call(element, getter(property).call(element));
+			if (halt) set.call(element, get.call(element)); //hack
 			clean();
 		} else moo.frame.cancel(defer);
 	}, options = this.options = function(d, e, c){
@@ -518,11 +540,11 @@ var parseDuration = function(value){
 };
 
 var UID = 0, animations = {}, retrieveAnimation = function(node, property){
-	var uid = node.µid || (node.µid = UID++), animation = animations[uid] || (animations[uid] = {});
+	var uid = node.µid || (node.µid = (UID++).toString(36)), animation = animations[uid] || (animations[uid] = {});
 	return animation[property] || (animation[property] = (CSSTransition) ? new cssAnimation(node, property) : new jsAnimation(node, property));
-}, stopAnimation = function(node, property){
+}, haltAnimation = function(node, property){
 	var animation = animations[node.µid], instance;
-	if (animation && (instance = animation[property])) instance.stop();
+	if (animation && (instance = animation[property])) instance.stop(true);
 };
 
 var startAnimationStyles = function(nodes, styles, options){
@@ -550,20 +572,29 @@ var startAnimationStyles = function(nodes, styles, options){
 	for (var i = 0, node; node = nodes[i]; i++) (function(node){
 		
 		for (var property in clean) (function(property, value){
-
 			length++;
-
-			var instance = retrieveAnimation(node, property),
-				from = getter(property).call(node), to = parsers[property].call(node, value);
-			if (from == null) throw 'could not read ' + property;
-			if (to == null) throw 'no valid value for ' + property;
 			
-			instance.stop();
-			instance.options(duration, equation, function(){
-				setter(property).call(node, value);
-				check();
-			});
-			instance.start(from, to);
+			var parser = parsers[property], set = setter(property), get = getter(property), instance = retrieveAnimation(node, property),
+			
+				parsedFrom = new parser(get.call(node)), parsedTo = new parser(value),
+				fromParsers = parsedFrom.extract(), toParsers = parsedTo.extract(),
+				len = fromParsers.length, mustSet = false;
+			
+			for (var i = 0; i < len; i++){
+				var from = fromParsers[i], to = toParsers[i];
+				if (to.unit && to.unit != 'px'){ //CSSLengthParser
+					from.value = from.value / pixelRatio(node, to.unit);
+					from.unit = to.unit;
+					mustSet = true;
+				}
+			}
+			
+			var fromString = parsedFrom.toString();
+			
+			if (mustSet) set.call(node, fromString);
+			
+			instance.options(duration, equation, check);
+			instance.start(fromString, parsedTo.toString());
 			
 		})(property, clean[property]);
 		
@@ -580,9 +611,9 @@ var startAnimationProperty = function(nodes, property, value, options){
 var setStyles = function(nodes, styles){
 	for (var i = 0, node; node = nodes[i]; i++){
 		for (var property in styles){
-			var value = styles[property], s = setter(property = camelize(property));
-			stopAnimation(node, property);
-			s.call(node, value);
+			var value = styles[property], set = setter(property = camelize(property));
+			haltAnimation(node, property);
+			set.call(node, value);
 		}
 	}
 };
@@ -613,5 +644,7 @@ moo.prototype.style = function(A, B){
 	else if (arguments.length == 1) return getStyle(nodes[0], A);
 	return this;
 };
+
+window.parsers = parsers;
 
 })();

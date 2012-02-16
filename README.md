@@ -20,9 +20,11 @@ Requires an ES5 shim, such as [MooTools](http://mootools.net).
 Every property in moofx can either be provided camelized (`backgroundColor`) or hyphenated (`background-color`).
 Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hsl (`hsl(20,30,40)`), hsla (`hsla(20,30,40,0.5)`) hex (`#ffa`, `#ffaa00`), or hexa (`#ffaa00ff`, `#fa0f`).
 
+moofx3 can animate the following properties: `backgroundColor`, `color`, `backgroundSize`, `fontSize`, `height`, `width`, `marginTop`, `paddingTop`, `borderTopWidth`, `top`, `borderTopColor`, `borderTopStyle`, `marginRight`, `paddingRight`, `borderRightWidth`, `right`, `borderRightColor`, `borderRightStyle`, `marginBottom`, `paddingBottom`, `borderBottomWidth`, `bottom`, `borderBottomColor`, `borderBottomStyle`, `marginLeft`, `paddingLeft`, `borderLeftWidth`, `left`, `borderLeftColor`, `borderLeftStyle`, `borderTopLeftRadius`, `borderTopRightRadius`, `borderBottomRightRadius`, `borderBottomLeftRadius`, `zIndex`, `margin`, `padding`, `borderRadius`, `borderWidth`, `borderStyle`, `borderColor`, `borderTop`, `borderRight`, `borderBottom`, `borderLeft`, `border`, `opacity`, `transform`.
+
 ### moo
 
-The `moo` method either accepts a collection of nodes (such as the return value of document.querySelectorAll) an array of nodes (such as the expected return value of every dom selector library available, such as Slick, or Sizzle), or a single node selected by whatever means.
+The `moo` method either accepts a collection of nodes (such as the return value of `document.querySelectorAll`) an array of nodes (such as the expected return value of every dom selector library available, such as [`Slick`](https://github.com/mootools/slick), or [`Sizzle`](https://github.com/jquery/sizzle)), or a single node selected by whatever means.
 
 ```javascript
 
