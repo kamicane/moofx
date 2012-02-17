@@ -19,6 +19,7 @@ Requires an ES5 shim, such as [MooTools](http://mootools.net).
 
 Every property in moofx can either be provided camelized (`backgroundColor`) or hyphenated (`background-color`).
 Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hsl (`hsl(20,30,40)`), hsla (`hsla(20,30,40,0.5)`) hex (`#ffa`, `#ffaa00`), or hexa (`#ffaa00ff`, `#fa0f`).
+Lengths will always be retrieved in pixels, unless they have a value of `auto`, but you are able to animate to whatever length unit you prefer, such as `em`, `px`, `%`, `pt`.
 
 moofx3 can animate the following properties: `backgroundColor`, `color`, `backgroundSize`, `fontSize`, `height`, `width`, `marginTop`, `paddingTop`, `borderTopWidth`, `top`, `borderTopColor`, `borderTopStyle`, `marginRight`, `paddingRight`, `borderRightWidth`, `right`, `borderRightColor`, `borderRightStyle`, `marginBottom`, `paddingBottom`, `borderBottomWidth`, `bottom`, `borderBottomColor`, `borderBottomStyle`, `marginLeft`, `paddingLeft`, `borderLeftWidth`, `left`, `borderLeftColor`, `borderLeftStyle`, `borderTopLeftRadius`, `borderTopRightRadius`, `borderBottomRightRadius`, `borderBottomLeftRadius`, `zIndex`, `margin`, `padding`, `borderRadius`, `borderWidth`, `borderStyle`, `borderColor`, `borderTop`, `borderRight`, `borderBottom`, `borderLeft`, `border`, `opacity`, `transform`.
 

@@ -330,18 +330,18 @@ if (CSSTransform){
 	browserTable[transform] = CSSTransform;
 	
 	setters[transform] = function(value){
-		this.style[CSSTransform] = CSStransformParser(value).toString();
+		this.style[CSSTransform] = new CSSTransformParser(value).toString();
 	};
 
 	getters[transform] = function(){
-		return CSSTransformParser(this.style[CSSTransform]).toString();
+		return new CSSTransformParser(this.style[CSSTransform]).toString();
 	};
 
 } else {
 
 	setters[transform] = function(){};
 	getters[transform] = function(){
-		return CSSTransformParser().toString();
+		return new CSSTransformParser().toString();
 	};
 
 }
