@@ -74,7 +74,9 @@ var pixelRatio = function(element, u){
 };
 
 var CSSParser = function(parser, toString){
-	parser.prototype = Object.create(CSSParser.prototype);
+	var F = function(){};
+	F.prototype = CSSParser.prototype;
+	parser.prototype = new F;
 	parser.prototype.toString = toString;
 	return parser;
 };
