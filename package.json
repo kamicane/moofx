@@ -1,7 +1,7 @@
 {
 	"name": "moofx",
 	"description": "A CSS3-enabled javascript animation library on caffeine",
-	"version": "3.0.0-8-y",
+	"version": "3.0.0-9-y",
 	"keywords": ["moofx", "fx", "animation", "transition", "effects", "ender"],
 	"homepage": "http://moofx.it",
 	"author": "Valerio Proietti <@kamicane> (http://mad4milk.net)",
