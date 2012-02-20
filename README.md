@@ -1,4 +1,4 @@
-# moofx 3 (2.8.8α)
+# moofx 3
 
 moofx3 is a css3-enabled javascript animation library on caffeine.
 moofx3 is written in [coffeescript](http://coffeescript.org), which is a neat language that compiles to fast javascript code.
@@ -117,8 +117,6 @@ moofx.color('hsla(0, 0, 0, 0)'); //rgba(0, 0, 0, 0)
 Include the pre-compiled moofx.js (or moofx-min.js) in the webpage of choice. Use it. Love it. Done.
 
 moofx can also be installed and depended on with npm (and [ender](http://ender.no.de/)) or [packager](https://github.com/kamicane/packager).
-
-```
 
 ## adapters
 
