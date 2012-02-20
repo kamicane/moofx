@@ -152,26 +152,21 @@ HSLtoRGB = function(h, s, l, a){
 };
 
 moofx.color = function(input, array){
-	var a, match;
+	var match;
 	input = colors[input = input.replace(/\s+/g, '')] || input;
 	if (input.match(/^#[a-f0-9]{3,8}/)){
 		input = HEXtoRGB(input.replace('#', ''));
-	} else {
-		if (match = input.match(/([\d.])+/g)){
-			if (input.match(/^rgb/)){
-				input = match;
-			} else if (input.match(/^hsl/)){
-				input = HSLtoRGB.apply(null, match);
-			} else {
-				return null;
-			}
+	} else if (match = input.match(/([\d.])+/g)){
+		if (input.match(/^rgb/)){
+			input = match;
+		} else if (input.match(/^hsl/)){
+			input = HSLtoRGB.apply(null, match);
 		}
 	}
-	if (!input || !(input = RGBtoRGB.apply(null, input))) return null;
+	if (!(input && (input = RGBtoRGB.apply(null, input)))) return null;
 	if (array) return input;
 	if (input[3] === 1) input.splice(3, 1);
-	a = input.length > 3 ? 'a' : '';
-	return "rgb" + a + "(" + input + ")";
+	return "rgb" + (input.length > 3 ? 'a' : '') + "(" + input + ")";
 };
 
 cancelFrame = moofx.cancelFrame, requestFrame = moofx.requestFrame, color = moofx.color;
@@ -257,9 +252,9 @@ pixelRatio = function(element, u){
 	parent = element.parentNode;
 	ratio = 1;
 	if (parent){
-		test.style.cssText = cssText + ("width:10" + u + ";");
+		test.style.cssText = cssText + ("width:100" + u + ";");
 		parent.appendChild(test);
-		ratio = test.offsetWidth / 10;
+		ratio = test.offsetWidth / 100;
 		parent.removeChild(test);
 	}
 	return ratio;
@@ -391,10 +386,10 @@ CSSColorParser = (function(_super){
 	}
 
 	CSSColorParser.prototype.toString = function(forceAlpha){
-		if (!forceAlpha && this.value[3] === 1){
-			return "rgb(" + this.value[0] + ", " + this.value[1] + ", " + this.value[2] + ")";
-		} else {
+		if (forceAlpha || this.value[3] !== 1){
 			return "rgba(" + this.value + ")";
+		} else {
+			return "rgb(" + this.value[0] + ", " + this.value[1] + ", " + this.value[2] + ")";
 		}
 	};
 
@@ -804,11 +799,8 @@ Animation = (function(){
 		if (match = string(duration).match(/([\d.]+)(s|ms)/)){
 			time = number(match[1]);
 			unit = match[2];
-			if (unit === 's'){
-				return time * 1000;
-			} else if (unit === 'ms'){
-				return time;
-			}
+			if (unit === 's') return time * 1000;
+			if (unit === 'ms') return time;
 		} else {
 			return null;
 		}
@@ -870,7 +862,7 @@ JSAnimation = (function(_super){
 
 	JSAnimation.prototype.step = function(now){
 		var f, i, tpl, ƒ, δ, _len7, _ref5;
-		if (!this.time) this.time = now;
+		this.time || (this.time = now);
 		ƒ = (now - this.time) / this.duration;
 		if (ƒ > 1) ƒ = 1;
 		δ = this.equation(ƒ);
@@ -1052,8 +1044,14 @@ Animations = (function(){
 	};
 
 	Animations.prototype.starts = function(nodes, styles, options){
-		var callback, completed, enforce, fp, fromParsers, fs, get, i, instance, length, node, parsedFrom, parsedTo, parser, property, set, toParsers, tp, ts, value, _len8, _len9, _p;
+		var callback, completed, enforce, fp, fromParsers, fs, get, i, instance, length, node, parsedFrom, parsedTo, parser, property, set, toParsers, tp, ts, type, value, _len8, _len9, _p;
 		if (options == null) options = {};
+		type = typeof options;
+		options = type === 'function' ? {
+			callback: options
+		} : type === 'string' ? {
+			duration: options
+		} : options;
 		callback = options.callback || function(){};
 		completed = 0;
 		length = 0;

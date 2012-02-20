@@ -53,15 +53,11 @@ HSLtoRGB = (h, s, l, a = 1) ->
 moofx.color = (input, array) ->
 	input = colors[input = input.replace(/\s+/g, '')] or input
 	if input.match(/^#[a-f0-9]{3,8}/) then input = HEXtoRGB(input.replace('#', ''))
+	else if match = input.match(/([\d.])+/g)
+		if input.match(/^rgb/) then input = match
+		else if input.match(/^hsl/) then input = HSLtoRGB(match...)
 	
-	else
-		if match = input.match(/([\d.])+/g)
-			if input.match(/^rgb/) then input = match
-			else if input.match(/^hsl/) then input = HSLtoRGB(match...)
-			else return null
-	
-	if not input or not input = RGBtoRGB(input...) then return null
-	if array then return input
-	if input[3] is 1 then input.splice(3, 1)
-	a = if input.length > 3 then 'a' else ''
-	"rgb#{a}(#{input})"
+	return null unless input and input = RGBtoRGB(input...)
+	return input if array
+	input.splice(3, 1) if input[3] is 1
+	"rgb#{if input.length > 3 then 'a' else ''}(#{input})"

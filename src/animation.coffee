@@ -110,9 +110,8 @@ class CSSColorParser extends CSSParser
 		value = '#00000000' if value is 'transparent'
 		@value = color(value, yes) or [0, 0, 0, 1]
 	toString: (forceAlpha) ->
-		if not forceAlpha and @value[3] is 1 then "rgb(#{@value[0]}, #{@value[1]}, #{@value[2]})"
-		else "rgba(#{@value})"
-		
+		if forceAlpha or @value[3] isnt 1 then "rgba(#{@value})"
+		else "rgb(#{@value[0]}, #{@value[1]}, #{@value[2]})"
 
 mirror4 = (values) ->
 	length = values.length
@@ -240,7 +239,7 @@ parsers.transform = class CSSTransformParser extends CSSParser
 		transforms = translate: '0px,0px', rotate: '0deg', scale: '1,1', skew: '0deg,0deg'
 		if value = clean(value).match(/\w+\s?\([-,.\w\s]+\)/g)
 			for v in value then do (v) ->
-				return if not v = v.replace(/\s+/g, '').match(/^(translate|scale|rotate|skew)\((.*)\)$/)
+				return unless v = v.replace(/\s+/g, '').match(/^(translate|scale|rotate|skew)\((.*)\)$/)
 				name = v[1]
 				values = v[2].split(',')
 				switch name
@@ -348,8 +347,8 @@ class Animation
 		return pass
 		
 	setOptions: (options = {}) ->
-		if not @duration = @parseDuration(options.duration ? '500ms') then throw new Error "#{options.duration} is not a valid duration"
-		if not @equation = @parseEquation(options.equation or 'default') then throw new Error "#{options.equation} is not a valid equation"
+		throw new Error "#{options.duration} is not a valid duration" unless @duration = @parseDuration(options.duration ? '500ms')
+		throw new Error "#{options.equation} is not a valid equation" unless @equation = @parseEquation(options.equation or 'default')
 		@callback = options.callback or () ->
 		@
 		
@@ -357,8 +356,8 @@ class Animation
 		if match = string(duration).match(/([\d.]+)(s|ms)/)
 			time = number(match[1])
 			unit = match[2]
-			if unit is 's' then return time * 1000
-			else if unit is 'ms' then return time
+			return time * 1000 if unit is 's'
+			return time if unit is 'ms'
 		else return null
 		
 	parseEquation: (equation) ->
@@ -393,7 +392,7 @@ class JSAnimation extends Animation
 		@
 
 	step: (now) ->
-		if not @time then @time = now
+		@time or= now
 		ƒ = (now - @time) / @duration
 		if ƒ > 1 then ƒ = 1
 		δ = @equation(ƒ)
@@ -526,6 +525,8 @@ class Animations
 		animation[property] or= if CSSTransition then new CSSAnimation(node, property) else new JSAnimation(node, property)
 	
 	starts: (nodes, styles, options = {}) ->
+		type = typeof options
+		options = if type is 'function' then callback: options else if type is 'string' then duration: options else options
 		callback = options.callback or () ->
 		completed = 0
 		length = 0
@@ -534,7 +535,7 @@ class Animations
 		for property, value of styles
 			property = camelize(property)
 			parser = parsers[property]
-			if not parser then throw new Error "no parser for #{property}"
+			throw new Error "no parser for #{property}" unless parser
 			
 			set = setter(property)
 			get = getter(property)
