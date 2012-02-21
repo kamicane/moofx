@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<title>Jasmine Spec Runner</title>
+
+	<link rel="shortcut icon" type="image/png" href="jasmine/jasmine_favicon.png">
+
+	<link rel="stylesheet" type="text/css" href="jasmine/jasmine.css">
+	<script type="text/javascript" src="jasmine/jasmine.js"></script>
+	<script type="text/javascript" src="jasmine/jasmine-html.js"></script>
+
+	<!-- include source files here... -->
+	<script type="text/javascript" src="../lib/moofx.js"></script>
+	<script type="text/javascript" src="../lib/color.js"></script>
+	<script type="text/javascript" src="../lib/frame.js"></script>
+	<script type="text/javascript" src="../lib/animation.js"></script>
+
+	<!-- include spec files here... -->
+	<script type="text/javascript" src="src/parsers.js"></script>
+	
+	<style type="text/css">
+		#test {
+			width: 100px;
+			height: 100px;
+			visibility: 'hidden';
+			position: absolute;
+		}
+
+		#testee {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+
+</head>
+
+<body>
+	<div id="test">
+		<div id="testee"></div>
+	</div>
+	
+	<script type="text/javascript">
+		(function() {
+			var jasmineEnv = jasmine.getEnv();
+			jasmineEnv.updateInterval = 1000;
+			var trivialReporter = new jasmine.TrivialReporter();
+			jasmineEnv.addReporter(trivialReporter);
+			jasmineEnv.specFilter = function(spec) {
+				return trivialReporter.specFilter(spec);
+			};
+			jasmineEnv.execute();
+		})();
+	</script>
+</body>
+</html>
