@@ -10,8 +10,12 @@ colors =
 	black: '#000000', silver: '#c0c0c0', gray: '#808080'
 	
 RGBtoRGB = (r, g, b, a = 1) ->
-	if (r > 255 or r < 0) or (g > 255 or g < 0) or (b > 255 or b < 0) or (a > 255 or a < 0) then null;
-	else [Math.round(r), Math.round(g), Math.round(b), parseFloat(a)]
+	r = parseInt(r, 10)
+	g = parseInt(g, 10)
+	b = parseInt(b, 10)
+	a = parseFloat(a)
+	return null unless (r <= 255 and r >= 0) and (g <= 255 and g >= 0) and (b <= 255 and b >= 0) and (a <= 1 and a >= 0)
+	[Math.round(r), Math.round(g), Math.round(b), a]
 	
 HEXtoRGB = (hex) ->
 	if hex.length is 3 then hex += 'f'
@@ -37,6 +41,7 @@ HSLtoRGB = (h, s, l, a = 1) ->
 	h /= 360
 	s /= 100
 	l /= 100
+	a /= 1
 	if (h > 1 or h < 0) or (s > 1 or s < 0) or (l > 1 or l < 0) or (a > 1 or a < 0) then return null
 	
 	if s is 0 then r = b = g = l
@@ -47,16 +52,18 @@ HSLtoRGB = (h, s, l, a = 1) ->
 		g = HUEtoRGB(p, q, h)
 		b = HUEtoRGB(p, q, h - 1/3)
 		
-	[r * 255, g * 255, b * 255, parseFloat(a)]
+	[r * 255, g * 255, b * 255, a]
 	
 
 moofx.color = (input, array) ->
+	return null unless typeof input is 'string' # not a string
 	input = colors[input = input.replace(/\s+/g, '')] or input
 	if input.match(/^#[a-f0-9]{3,8}/) then input = HEXtoRGB(input.replace('#', ''))
 	else if match = input.match(/([\d.])+/g)
 		if input.match(/^rgb/) then input = match
 		else if input.match(/^hsl/) then input = HSLtoRGB(match...)
-	
+		else return null # unknown number list
+	else return null # no match
 	return null unless input and input = RGBtoRGB(input...)
 	return input if array
 	input.splice(3, 1) if input[3] is 1

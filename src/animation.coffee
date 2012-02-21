@@ -40,14 +40,13 @@ getter = (key) ->
 	getters[key] or= do ->
 		parser = parsers[key] or CSSStringParser
 		() ->
-			new parser(computedStyle(@)(key)).toString(@)
+			new parser(computedStyle(@)(key)).toString(true, @)
 	
 setter = (key) ->
 	setters[key] or= do ->
 		parser = parsers[key] or CSSStringParser
 		(value) ->
 			@style[key] = new parser(value).toString()
-			
 
 test = document.createElement('div')
 cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;"
@@ -63,55 +62,44 @@ pixelRatio = (element, u) ->
 	ratio
 	
 class CSSParser
-	constructor: (value) ->
-		@value = string(value)
-	extract: () ->
-		[@]
-	toString: () ->
-		string(@value)
+	extract: () -> [@]
+	toString: () -> string(@value)
+
+class CSSStringParser extends CSSParser
+	constructor: (value = '') -> @value = string(value)
+
+class CSSNumberParser extends CSSParser
+	constructor: (value = '') -> @value = if isFinite(n = number(value)) then n else value
 
 class CSSParsers
-	constructor: (parsers) ->
-		@parsers = parsers
-	extract: () ->
-		@parsers
-	toString: (x) ->
-		(parser.toString(x) for parser in @parsers).join(' ')
-		#!map map(@parsers, (parser)-> parser.toString(x)).join(' ')
-
-class CSSNumberParser extends CSSParser
-	constructor: (value) ->
-		@value = number(value)
-		
-class CSSStringParser extends CSSParser
-		
-class CSSNumberParser extends CSSParser
-	constructor: (value) ->
-		@value = number(value)
+	extract: () -> @parsed
+	toString: (normalize, node) ->
+		clean((parser.toString(normalize, node) for parser in @parsed).join(' '))
 	
 class CSSLengthParser extends CSSParser
-	constructor: (value) ->
-		if value is 'auto'
-			@value = 'auto'
-		else if match = clean(string(value)).match(/^([-\d.]+)(%|px|em|pt)?$/)
+	constructor: (value = '') ->
+		if value is 'auto' then @value = 'auto'
+		else if match = clean(string(value)).match(/^([-\d.]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)?$/)
 			@value = number(match[1])
 			@unit = if @value is 0 or not match[2] then 'px' else match[2]
-		else
-			@value = 0
-			@unit = 'px'
-	toString: (node) ->
-		if not @value? then null
-		else if @value is 'auto' then @value
-		else if node and node.nodeType is 1 and @unit != 'px' then (pixelRatio(node, @unit) * @value) + 'px'
-		else @value + @unit
+		else @value = ''
+	toString: (normalize, node) ->
+		return @value if @value is 'auto'
+		return '0px' if normalize and @value is ''
+		return '' if @value is ''
+		return "#{pixelRatio(node, @unit) * @value}px" if node and @unit != 'px'
+		@value + @unit
 
 class CSSColorParser extends CSSParser
-	constructor: (value = '#000') ->
+	constructor: (value) ->
 		value = '#00000000' if value is 'transparent'
-		@value = color(value, yes) or [0, 0, 0, 1]
-	toString: (forceAlpha) ->
-		if forceAlpha or @value[3] isnt 1 then "rgba(#{@value})"
-		else "rgb(#{@value[0]}, #{@value[1]}, #{@value[2]})"
+		@value = if value then color(value, yes) else ''
+	toString: (normalize) ->
+		return "rgba(0,0,0,1)" if normalize and not @value
+		return '' unless @value
+		return 'transparent' if not normalize and (@value is 'transparent' or @value[3] is 0)
+		return "rgba(#{@value})" if normalize or @value[3] isnt 1
+		"rgb(#{@value[0]},#{@value[1]},#{@value[2]})"
 
 mirror4 = (values) ->
 	length = values.length
@@ -120,15 +108,32 @@ mirror4 = (values) ->
 	else if length is 3 then values.push(values[1])
 	return values
 
-
 class CSSLengthParsers extends CSSParsers
-	constructor: (value) ->
-		@parsers = mirror4(new CSSLengthParser(v) for v in value.split(' '))
-		#!map @parsers = mirror4(map(value.split(' '), (v) -> new CSSLengthParser(v)))
+	constructor: (value = '') ->
+		values = mirror4(clean(value).split(' '))
+		@parsed = (new CSSLengthParser(v) for v, i in values)
+		
+# border-specific parsers
 
 class CSSBorderStyleParser extends CSSParser
-	constructor: (value) ->
-		@value = if value.match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/) then value else 'none'
+	constructor: (value = '') ->
+		match = (value = clean(value)).match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/)
+		@value = if match then value else ''
+	toString: (normalize) ->
+		return 'none' if normalize and not @value
+		return @value
+		
+class CSSBorderParsers extends CSSParsers
+	constructor: (value = '') ->
+		if value is 'none' then value = '0 none #000'
+		match = (value = clean(value)).match(/((?:[\d.]+)(?:[\w%]+)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/) or []
+		@parsed = [new CSSLengthParser(match[1] ? ''), new CSSBorderStyleParser(match[2] ? ''), new CSSColorParser(match[3] ? '')]
+		
+class CSSBorderColorParsers extends CSSParsers
+	constructor: (colors = '') ->
+		colors = mirror4(colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) or [''])
+		@parsed = (new CSSColorParser(c) for c in colors)
+		#!map @parsers = mirror4(map(colors, (c) -> new CSSColorParser(c)))
 
 trbl = ['Top', 'Right', 'Bottom', 'Left']
 tlbl = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft']
@@ -140,11 +145,6 @@ parsers.color = parsers.backgroundColor = CSSColorParser
 # width, height, fontSize, backgroundSize
 
 parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = CSSLengthParser
-
-class CSSBorderDIRParsers extends CSSParsers
-	constructor: (value) ->
-		value = clean(value).match(/((?:[\d.]+)(?:px|em|pt)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/) or [null, '0px']
-		@parsers = [new CSSLengthParser(value[1]), new CSSBorderStyleParser(value[2]), new CSSColorParser(value[3])]
 		
 # marginDIR, paddingDIR, borderDIRWidth, borderDIRstyle, borderDIRColor, borderDIR
 
@@ -154,7 +154,7 @@ for d in trbl
 	parsers[bd + 'Color'] = CSSColorParser
 	parsers[bd + 'Style'] = CSSBorderStyleParser
 	
-	parsers[bd] = CSSBorderDIRParsers
+	parsers[bd] = CSSBorderParsers
 	getters[bd] = () ->
 		[getter(bd + 'Width').call(@), getter(bd + 'Style').call(@), getter(bd + 'Color').call(@)].join(' ')
 
@@ -188,20 +188,16 @@ getters.borderRadius = () ->
 
 parsers.borderWidth = CSSLengthParsers
 
-parsers.borderColor = class CSSColorParsers extends CSSParsers
-	constructor: (colors) ->
-		colors = colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) or ['#000']
-		@parsers = mirror4(new CSSColorParser(c) for c in colors)
-		#!map @parsers = mirror4(map(colors, (c) -> new CSSColorParser(c)))
+parsers.borderColor = CSSBorderColorParsers
 		
 for t in ['Width', 'Style', 'Color'] then do (t) ->
 	getters['border' + t] = () ->
 		(getter('border' + d + t).call(@) for d in trbl).join(' ')
-	#!map map(trbl, (d) => getter(border + d + t).call(@)).join(' ')
+		#!map map(trbl, (d) => getter(border + d + t).call(@)).join(' ')
 
 # border
 
-parsers.border = CSSBorderDIRParsers
+parsers.border = CSSBorderParsers
 
 getters.border = () ->
 	for d in trbl

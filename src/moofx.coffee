@@ -9,7 +9,7 @@
 
 moofx = (nod) ->
 	if not nod then null
-	else new µ(if nod.length? then nod else if nod.nodeType? then [nod] else [])
+	else new µ(if nod.length? then nod else if nod.nodeType is 1 then [nod] else [])
 
 moofx:: = µ::
 
