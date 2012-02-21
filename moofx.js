@@ -10,7 +10,7 @@ license: MIT
 
 !(function(){
 
-var Animation, Animations, CSSAnimation, CSSBorderDIRParsers, CSSBorderStyleParser, CSSColorParser, CSSColorParsers, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, µ, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
+var Animation, Animations, CSSAnimation, CSSBorderColorParsers, CSSBorderParsers, CSSBorderStyleParser, CSSColorParser, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bColorReg, bStyleReg, bWidthReg, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, µ, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
 	__hasProp = Object.prototype.hasOwnProperty,
 	__extends = function(child, parent){ for (var key in parent){ if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor(){ this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -25,7 +25,7 @@ moofx = function(nod){
 	if (!nod){
 		return null;
 	} else {
-		return new µ(nod.length != null ? nod : nod.nodeType != null ? [nod] : []);
+		return new µ(nod.length != null ? nod : nod.nodeType === 1 ? [nod] : []);
 	}
 };
 
@@ -96,11 +96,14 @@ colors = {
 
 RGBtoRGB = function(r, g, b, a){
 	if (a == null) a = 1;
-	if ((r > 255 || r < 0) || (g > 255 || g < 0) || (b > 255 || b < 0) || (a > 255 || a < 0)){
+	r = parseInt(r, 10);
+	g = parseInt(g, 10);
+	b = parseInt(b, 10);
+	a = parseFloat(a);
+	if (!((r <= 255 && r >= 0) && (g <= 255 && g >= 0) && (b <= 255 && b >= 0) && (a <= 1 && a >= 0))){
 		return null;
-	} else {
-		return [Math.round(r), Math.round(g), Math.round(b), parseFloat(a)];
 	}
+	return [Math.round(r), Math.round(g), Math.round(b), a];
 };
 
 HEXtoRGB = function(hex){
@@ -136,6 +139,7 @@ HSLtoRGB = function(h, s, l, a){
 	h /= 360;
 	s /= 100;
 	l /= 100;
+	a /= 1;
 	if ((h > 1 || h < 0) || (s > 1 || s < 0) || (l > 1 || l < 0) || (a > 1 || a < 0)){
 		return null;
 	}
@@ -148,11 +152,12 @@ HSLtoRGB = function(h, s, l, a){
 		g = HUEtoRGB(p, q, h);
 		b = HUEtoRGB(p, q, h - 1 / 3);
 	}
-	return [r * 255, g * 255, b * 255, parseFloat(a)];
+	return [r * 255, g * 255, b * 255, a];
 };
 
 moofx.color = function(input, array){
 	var match;
+	if (typeof input !== 'string') return null;
 	input = colors[input = input.replace(/\s+/g, '')] || input;
 	if (input.match(/^#[a-f0-9]{3,8}/)){
 		input = HEXtoRGB(input.replace('#', ''));
@@ -161,7 +166,11 @@ moofx.color = function(input, array){
 			input = match;
 		} else if (input.match(/^hsl/)){
 			input = HSLtoRGB.apply(null, match);
+		} else {
+			return null;
 		}
+	} else {
+		return null;
 	}
 	if (!(input && (input = RGBtoRGB.apply(null, input)))) return null;
 	if (array) return input;
@@ -228,7 +237,7 @@ getter = function(key){
 		var parser;
 		parser = parsers[key] || CSSStringParser;
 		return function(){
-			return new parser(computedStyle(this)(key)).toString(this);
+			return new parser(computedStyle(this)(key)).toString(true, this);
 		};
 	})());
 };
@@ -238,7 +247,7 @@ setter = function(key){
 		var parser;
 		parser = parsers[key] || CSSStringParser;
 		return function(value){
-			return this.style[key] = new parser(value).toString();
+			return this.style[key] = new parser(value).toString(false, this);
 		};
 	})());
 };
@@ -262,9 +271,7 @@ pixelRatio = function(element, u){
 
 CSSParser = (function(){
 
-	function CSSParser(value){
-		this.value = string(value);
-	}
+	function CSSParser(){}
 
 	CSSParser.prototype.extract = function(){
 		return [this];
@@ -278,52 +285,13 @@ CSSParser = (function(){
 
 })();
 
-CSSParsers = (function(){
-
-	function CSSParsers(parsers){
-		this.parsers = parsers;
-	}
-
-	CSSParsers.prototype.extract = function(){
-		return this.parsers;
-	};
-
-	CSSParsers.prototype.toString = function(x){
-		var parser;
-		return ((function(){
-			var _i, _len, _ref, _results;
-			_ref = this.parsers;
-			_results = [];
-			for (_i = 0, _len = _ref.length; _i < _len; _i++){
-				parser = _ref[_i];
-				_results.push(parser.toString(x));
-			}
-			return _results;
-		}).call(this)).join(' ');
-	};
-
-	return CSSParsers;
-
-})();
-
-CSSNumberParser = (function(_super){
-
-	__extends(CSSNumberParser, _super);
-
-	function CSSNumberParser(value){
-		this.value = number(value);
-	}
-
-	return CSSNumberParser;
-
-})(CSSParser);
-
 CSSStringParser = (function(_super){
 
 	__extends(CSSStringParser, _super);
 
-	function CSSStringParser(){
-		CSSStringParser.__super__.constructor.apply(this, arguments);
+	function CSSStringParser(value){
+		if (value == null) value = '';
+		this.value = string(value);
 	}
 
 	return CSSStringParser;
@@ -335,12 +303,40 @@ CSSNumberParser = (function(_super){
 	__extends(CSSNumberParser, _super);
 
 	function CSSNumberParser(value){
-		this.value = number(value);
+		var n;
+		if (value == null) value = '';
+		this.value = isFinite(n = number(value)) ? n : value;
 	}
 
 	return CSSNumberParser;
 
 })(CSSParser);
+
+CSSParsers = (function(){
+
+	function CSSParsers(){}
+
+	CSSParsers.prototype.extract = function(){
+		return this.parsed;
+	};
+
+	CSSParsers.prototype.toString = function(normalize, node){
+		var parser;
+		return clean(((function(){
+			var _i, _len, _ref, _results;
+			_ref = this.parsed;
+			_results = [];
+			for (_i = 0, _len = _ref.length; _i < _len; _i++){
+				parser = _ref[_i];
+				_results.push(parser.toString(normalize, node));
+			}
+			return _results;
+		}).call(this)).join(' '));
+	};
+
+	return CSSParsers;
+
+})();
 
 CSSLengthParser = (function(_super){
 
@@ -348,27 +344,25 @@ CSSLengthParser = (function(_super){
 
 	function CSSLengthParser(value){
 		var match;
+		if (value == null) value = '';
 		if (value === 'auto'){
 			this.value = 'auto';
-		} else if (match = clean(string(value)).match(/^([-\d.]+)(%|px|em|pt)?$/)){
+		} else if (match = clean(string(value)).match(/^([-\d.]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)?$/)){
 			this.value = number(match[1]);
 			this.unit = this.value === 0 || !match[2] ? 'px' : match[2];
 		} else {
-			this.value = 0;
-			this.unit = 'px';
+			this.value = '';
 		}
 	}
 
-	CSSLengthParser.prototype.toString = function(node){
-		if (!(this.value != null)){
-			return null;
-		} else if (this.value === 'auto'){
-			return this.value;
-		} else if (node && node.nodeType === 1 && this.unit !== 'px'){
-			return (pixelRatio(node, this.unit) * this.value) + 'px';
-		} else {
-			return this.value + this.unit;
+	CSSLengthParser.prototype.toString = function(normalize, node){
+		if (this.value === 'auto') return this.value;
+		if (normalize && this.value === '') return '0px';
+		if (this.value === '') return '';
+		if (node && this.unit !== 'px'){
+			return "" + (pixelRatio(node, this.unit) * this.value) + "px";
 		}
+		return this.value + this.unit;
 	};
 
 	return CSSLengthParser;
@@ -380,17 +374,18 @@ CSSColorParser = (function(_super){
 	__extends(CSSColorParser, _super);
 
 	function CSSColorParser(value){
-		if (value == null) value = '#000';
 		if (value === 'transparent') value = '#00000000';
-		this.value = color(value, true) || [0, 0, 0, 1];
+		this.value = value ? color(value, true) : '';
 	}
 
-	CSSColorParser.prototype.toString = function(forceAlpha){
-		if (forceAlpha || this.value[3] !== 1){
-			return "rgba(" + this.value + ")";
-		} else {
-			return "rgb(" + this.value[0] + ", " + this.value[1] + ", " + this.value[2] + ")";
+	CSSColorParser.prototype.toString = function(normalize){
+		if (normalize && !this.value) return "rgba(0,0,0,1)";
+		if (!this.value) return '';
+		if (!normalize && (this.value === 'transparent' || this.value[3] === 0)){
+			return 'transparent';
 		}
+		if (normalize || this.value[3] !== 1) return "rgba(" + this.value + ")";
+		return "rgb(" + this.value[0] + "," + this.value[1] + "," + this.value[2] + ")";
 	};
 
 	return CSSColorParser;
@@ -415,34 +410,88 @@ CSSLengthParsers = (function(_super){
 	__extends(CSSLengthParsers, _super);
 
 	function CSSLengthParsers(value){
-		var v;
-		this.parsers = mirror4((function(){
-			var _i, _len, _ref, _results;
-			_ref = value.split(' ');
+		var i, v, values;
+		if (value == null) value = '';
+		values = mirror4(clean(value).split(' '));
+		this.parsed = (function(){
+			var _len, _results;
 			_results = [];
-			for (_i = 0, _len = _ref.length; _i < _len; _i++){
-				v = _ref[_i];
+			for (i = 0, _len = values.length; i < _len; i++){
+				v = values[i];
 				_results.push(new CSSLengthParser(v));
 			}
 			return _results;
-		})());
+		})();
 	}
 
 	return CSSLengthParsers;
 
 })(CSSParsers);
 
+bStyleReg = /none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/g;
+
+bColorReg = /rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g;
+
+bWidthReg = /([-\d.]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)?/g;
+
 CSSBorderStyleParser = (function(_super){
 
 	__extends(CSSBorderStyleParser, _super);
 
 	function CSSBorderStyleParser(value){
-		this.value = value.match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/) ? value : 'none';
+		var match;
+		if (value == null) value = '';
+		match = (value = clean(value)).match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/);
+		this.value = match ? value : '';
 	}
+
+	CSSBorderStyleParser.prototype.toString = function(normalize){
+		if (normalize && !this.value) return 'none';
+		return this.value;
+	};
 
 	return CSSBorderStyleParser;
 
 })(CSSParser);
+
+CSSBorderParsers = (function(_super){
+
+	__extends(CSSBorderParsers, _super);
+
+	function CSSBorderParsers(value){
+		var match, _ref, _ref2, _ref3;
+		if (value == null) value = '';
+		if (value === 'none') value = '0 none #000';
+		match = (value = clean(value)).match(/((?:[\d.]+)(?:[\w%]+)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/) || [];
+		this.parsed = [new CSSLengthParser((_ref = match[1]) != null ? _ref : ''), new CSSBorderStyleParser((_ref2 = match[2]) != null ? _ref2 : ''), new CSSColorParser((_ref3 = match[3]) != null ? _ref3 : '')];
+	}
+
+	return CSSBorderParsers;
+
+})(CSSParsers);
+
+CSSBorderColorParsers = (function(_super){
+
+	__extends(CSSBorderColorParsers, _super);
+
+	function CSSBorderColorParsers(colors){
+		var c;
+		if (colors == null) colors = '';
+		colors = mirror4(colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) || ['']);
+		this.parsed = (function(){
+			var _i, _len, _results;
+			_results = [];
+			for (_i = 0, _len = colors.length; _i < _len; _i++){
+				c = colors[_i];
+				_results.push(new CSSColorParser(c));
+			}
+			return _results;
+		})();
+	}
+
+	return CSSBorderColorParsers;
+
+})(CSSParsers);
 
 trbl = ['Top', 'Right', 'Bottom', 'Left'];
 
@@ -451,19 +500,6 @@ tlbl = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
 parsers.color = parsers.backgroundColor = CSSColorParser;
 
 parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = CSSLengthParser;
-
-CSSBorderDIRParsers = (function(_super){
-
-	__extends(CSSBorderDIRParsers, _super);
-
-	function CSSBorderDIRParsers(value){
-		value = clean(value).match(/((?:[\d.]+)(?:px|em|pt)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/) || [null, '0px'];
-		this.parsers = [new CSSLengthParser(value[1]), new CSSBorderStyleParser(value[2]), new CSSColorParser(value[3])];
-	}
-
-	return CSSBorderDIRParsers;
-
-})(CSSParsers);
 
 for (_i = 0, _len = trbl.length; _i < _len; _i++){
 	d = trbl[_i];
@@ -475,7 +511,7 @@ for (_i = 0, _len = trbl.length; _i < _len; _i++){
 	}
 	parsers[bd + 'Color'] = CSSColorParser;
 	parsers[bd + 'Style'] = CSSBorderStyleParser;
-	parsers[bd] = CSSBorderDIRParsers;
+	parsers[bd] = CSSBorderParsers;
 	getters[bd] = function(){
 		return [getter(bd + 'Width').call(this), getter(bd + 'Style').call(this), getter(bd + 'Color').call(this)].join(' ');
 	};
@@ -536,27 +572,7 @@ getters.borderRadius = function(){
 
 parsers.borderWidth = CSSLengthParsers;
 
-parsers.borderColor = CSSColorParsers = (function(_super){
-
-	__extends(CSSColorParsers, _super);
-
-	function CSSColorParsers(colors){
-		var c;
-		colors = colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) || ['#000'];
-		this.parsers = mirror4((function(){
-			var _len5, _m, _results;
-			_results = [];
-			for (_m = 0, _len5 = colors.length; _m < _len5; _m++){
-				c = colors[_m];
-				_results.push(new CSSColorParser(c));
-			}
-			return _results;
-		})());
-	}
-
-	return CSSColorParsers;
-
-})(CSSParsers);
+parsers.borderColor = CSSBorderColorParsers;
 
 _ref3 = ['Width', 'Style', 'Color'];
 _fn2 = function(t){
@@ -578,7 +594,7 @@ for (_m = 0, _len5 = _ref3.length; _m < _len5; _m++){
 	_fn2(t);
 }
 
-parsers.border = CSSBorderDIRParsers;
+parsers.border = CSSBorderParsers;
 
 getters.border = function(){
 	var d, pvalue, value, _len6, _n;
