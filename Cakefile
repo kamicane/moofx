@@ -36,16 +36,16 @@ compile = (code, next) ->
 
 option('-f', '--file', 'file name')
 
-task 'dev', 'compiles lib/ from src/', () ->
+task 'test', 'compiles lib/ from src/', () ->
 	print("compiling lib/ from src/ …\n")
-	coffee = spawn('coffee', ['--compile', '--output', 'lib/', 'src/'])
+	coffee = spawn('coffee', ['--bare', '--compile', '--output', 'lib/', 'src/'])
 	
 	coffee.stdout.on('data', (data) -> print data.toString())
 	coffee.on('exit', (code) -> print("src/ was compiled on lib/\n") if code is 0)
 
 task 'watch', 'compiles lib/ from src/ and watches src', ->
 	print("watching /src for changes …\n")
-	coffee = spawn('coffee', ['--watch', '--compile', '--output', 'lib/', 'src/'])
+	coffee = spawn('coffee', ['--bare', '--watch', '--compile', '--output', 'lib/', 'src/'])
 	
 	coffee.stdout.on('data', (data) -> print(data.toString()))
 	
