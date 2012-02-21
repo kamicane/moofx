@@ -5,7 +5,7 @@
 	var moofx = require('moofx'),
 		color = moofx.color,
 		requestFrame = moofx.requestFrame,
-		cancelFrame = moofx.cancelFrame
+		cancelFrame = moofx.cancelFrame;
 		
 	$.ender({
 		
