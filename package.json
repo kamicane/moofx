@@ -1,7 +1,9 @@
 {
 	"name": "moofx",
 	"description": "A CSS3-enabled javascript animation library on caffeine",
-	"version": "3.0.0-15-y",
+	"version": "3.0.0-16-y",
+	"license": "MIT (http://mootools.net/license.txt)",
+	"main": "./moofx.js",
 	"keywords": ["moofx", "fx", "animation", "transition", "effects", "ender"],
 	"homepage": "http://moofx.it",
 	"author": "Valerio Proietti <@kamicane> (http://mad4milk.net)",
@@ -10,7 +12,10 @@
 		"type": "git",
 		"url": "https://github.com/kamicane/moofx.git"
 	},
-	"sources": ["./moofx.js"],
-	"main": "./moofx.js",
+	"devDependencies": {
+		"coffee-script": ">=1.2.0"
+	},
+	"sources": ["./moofx.js", "./adapters/mootools.js"],
+	"coffeescripts": ["./src/moofx.coffee", "./src/color.coffee", "./src/frame.coffee", "./src/animation.coffee"],
 	"ender": "./adapters/ender.js"
 }
