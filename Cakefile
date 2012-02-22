@@ -1,12 +1,12 @@
-{print} = require 'util'
-{spawn} = require 'child_process'
+{print} = require('util')
+{spawn} = require('child_process')
 {request} = require('http')
 {stringify} = require('querystring')
-fs = require 'fs'
+{readFileSync, writeFileSync} = require('fs')
 
 # google closure compiler service api
 
-compile = (code, next) ->
+closure = (code, next) ->
 	
 	data = stringify
 		compilation_level : 'SIMPLE_OPTIMIZATIONS'
@@ -33,8 +33,28 @@ compile = (code, next) ->
 		
 	req.write(data)
 	req.end()
+	
+# read json for niceties
 
-option('-f', '--file', 'file name')
+json = JSON.parse(readFileSync("./package.json"))
+name = json.name
+
+header = "/*\n
+---\n
+provides: #{name}\n
+version: #{json.version}\n
+description: #{json.description}\n
+website: #{json.homepage}\n
+author: #{json.author}\n
+license: #{json.license}\n
+...\n
+*/\n"
+
+startBoilerplate = "\n(function(){\n\n"
+
+endBoilerplate = "\n
+typeof module !== 'undefined' ? module.exports = #{name}: window.#{name} = #{name};\n\n
+})();"
 
 task 'test', 'compiles lib/ from src/', () ->
 	print("compiling lib/ from src/ …\n")
@@ -49,33 +69,24 @@ task 'watch', 'compiles lib/ from src/ and watches src', ->
 	
 	coffee.stdout.on('data', (data) -> print(data.toString()))
 	
-task 'build', 'compiles a single file from src/', (options) ->
-	file = options.file or 'moofx'
+task 'build', 'compiles a single file from src/', () ->
 	print("compiling javascript code from src/ …\n")
-	coffee = spawn('coffee', ['--bare', '--print', '--join', '--compile', 'src/moofx.coffee', 'src/frame.coffee', 'src/color.coffee', 'src/animation.coffee'])
+	coffee = spawn('coffee', ['--bare', '--print', '--join', '--compile'].concat(json.coffeescripts))
 
-	data = "!(function(){\n\n"
-
-	comment = "/*\n
-		---\n
-		provides: moofx\n
-		description: a css3-enabled javascript animation library on caffeine\n
-		author: Valerio Proietti (@kamicane) http://mad4milk.net http://mootools.net\n
-		website: http://moofx.it\n
-		license: MIT\n
-		...\n
-		*/\n\n".replace(/\t/g, "")
+	data = startBoilerplate
 
 	coffee.stdout.on('data', (d) -> data += d.toString())
 
 	coffee.on 'exit', (code) ->
-		data += "\n})();"
+		
+		data += endBoilerplate
+		
 		nicedata = data.replace(`/  /g`, '\t').replace(`/\) \{/g`, '){')
-		fs.writeFileSync("#{file}.js", "#{comment}#{nicedata}")
-		print("finished writing #{file}.js\n")
+		writeFileSync("./#{name}.js", "#{header}#{nicedata}")
+		print("finished writing #{name}.js\n")
 		print("sending javascript code to google closure REST API …\n")
-		compile data, (compiled) ->
+		closure data, (compiled) ->
 			if compiled
-				fs.writeFileSync("#{file}-min.js", "#{comment}#{compiled}")
-				print("finished writing #{file}-min.js\n")
-			else print("error writing #{file}.js\n")
+				writeFileSync("#{name}-min.js", "#{header}#{compiled}")
+				print("finished writing #{name}-min.js\n")
+			else print("error writing #{name}.js\n")
