@@ -1,4 +1,4 @@
-# moofx: A CSS3-enabled javascript animation library on caffeine
+# animation: animations using css3 when available, falling back to jsvscript timeouts / requestAnimationFrame methods
 # author: Valerio Proietti (@kamicane) http://mad4milk.net http://mootools.net
 # license: MIT
 
