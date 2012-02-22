@@ -68,7 +68,8 @@ describe('getters', function (){
 		document.body.appendChild(div)
 		div.style.opacity = "0.4"
 		div.style.filter = 'alpha(opacity=40)'
-		expect(getter('opacity').call(div)).toBe("0.4");
+		var opacity = getter('opacity').call(div)
+		expect(opacity >= 0.4 && opacity < 0.4001).toBe(true) //niiiiice
 		document.body.removeChild(div)
 	})
 
