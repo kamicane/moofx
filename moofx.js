@@ -1,16 +1,17 @@
 /*
 ---
 provides: moofx
-description: a css3-enabled javascript animation library on caffeine
-author: Valerio Proietti (@kamicane) http://mad4milk.net http://mootools.net
+version: 3.0.0-16-y
+description: A CSS3-enabled javascript animation library on caffeine
 website: http://moofx.it
-license: MIT
+author: Valerio Proietti <@kamicane> (http://mad4milk.net)
+license: MIT (http://mootools.net/license.txt)
 ...
 */
 
-!(function(){
+(function(){
 
-var Animation, Animations, CSSAnimation, CSSBorderColorParsers, CSSBorderParsers, CSSBorderStyleParser, CSSColorParser, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bColorReg, bStyleReg, bWidthReg, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, µ, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
+var Animation, Animations, CSSAnimation, CSSBorderColorParsers, CSSBorderParsers, CSSBorderStyleParser, CSSColorParser, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, µ, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
 	__hasProp = Object.prototype.hasOwnProperty,
 	__extends = function(child, parent){ for (var key in parent){ if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor(){ this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -30,49 +31,6 @@ moofx = function(nod){
 };
 
 moofx.prototype = µ.prototype;
-
-if (typeof module !== 'undefined'){
-	module.exports = moofx;
-} else {
-	this.moofx = moofx;
-}
-
-callbacks = [];
-
-running = false;
-
-iterator = function(time){
-	var i;
-	if (time == null) time = +(new Date);
-	running = false;
-	i = callbacks.length;
-	while (i){
-		callbacks.splice(--i, 1)[0](time);
-	}
-	return null;
-};
-
-requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback){
-	return setTimeout(callback, 1000 / 60);
-};
-
-moofx.requestFrame = function(callback){
-	callbacks.push(callback);
-	if (!running){
-		running = true;
-		requestAnimationFrame(iterator);
-	}
-	return this;
-};
-
-moofx.cancelFrame = function(match){
-	var callback, i, _len;
-	for (i = 0, _len = callbacks.length; i < _len; i++){
-		callback = callbacks[i];
-		if (callback === match) callbacks.splice(i, 1);
-	}
-	return this;
-};
 
 colors = {
 	maroon: '#800000',
@@ -178,6 +136,43 @@ moofx.color = function(input, array){
 	return "rgb" + (input.length > 3 ? 'a' : '') + "(" + input + ")";
 };
 
+callbacks = [];
+
+running = false;
+
+iterator = function(time){
+	var i;
+	if (time == null) time = +(new Date);
+	running = false;
+	i = callbacks.length;
+	while (i){
+		callbacks.splice(--i, 1)[0](time);
+	}
+	return null;
+};
+
+requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback){
+	return setTimeout(callback, 1000 / 60);
+};
+
+moofx.requestFrame = function(callback){
+	callbacks.push(callback);
+	if (!running){
+		running = true;
+		requestAnimationFrame(iterator);
+	}
+	return this;
+};
+
+moofx.cancelFrame = function(match){
+	var callback, i, _len;
+	for (i = 0, _len = callbacks.length; i < _len; i++){
+		callback = callbacks[i];
+		if (callback === match) callbacks.splice(i, 1);
+	}
+	return this;
+};
+
 cancelFrame = moofx.cancelFrame, requestFrame = moofx.requestFrame, color = moofx.color;
 
 string = String;
@@ -247,7 +242,7 @@ setter = function(key){
 		var parser;
 		parser = parsers[key] || CSSStringParser;
 		return function(value){
-			return this.style[key] = new parser(value).toString(false, this);
+			return this.style[key] = new parser(value).toString();
 		};
 	})());
 };
@@ -427,12 +422,6 @@ CSSLengthParsers = (function(_super){
 	return CSSLengthParsers;
 
 })(CSSParsers);
-
-bStyleReg = /none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/g;
-
-bColorReg = /rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g;
-
-bWidthReg = /([-\d.]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)?/g;
 
 CSSBorderStyleParser = (function(_super){
 
@@ -1169,5 +1158,7 @@ moofx.prototype.style = function(A, B){
 moofx.prototype.compute = function(A){
 	return getter(camelize(A)).call(this.valueOf()[0]);
 };
+
+typeof module !== 'undefined' ? module.exports = moofx: window.moofx = moofx;
 
 })();
