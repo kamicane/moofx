@@ -389,15 +389,15 @@ class JSAnimation extends Animation
 
 	step: (now) ->
 		@time or= now
-		ƒ = (now - @time) / @duration
-		if ƒ > 1 then ƒ = 1
-		δ = @equation(ƒ)
+		factor = (now - @time) / @duration
+		if factor > 1 then factor = 1
+		delta = @equation(factor)
 		tpl = @template
 		for f, i in @from
 			t = @to[i]
-			tpl = tpl.replace('@', if t isnt f then @compute(f, t, δ) else t)
+			tpl = tpl.replace('@', if t isnt f then @compute(f, t, delta) else t)
 		@setter.call(@node, tpl)
-		if ƒ isnt 1 then requestFrame(@bstep) else @callback(t)
+		if factor isnt 1 then requestFrame(@bstep) else @callback(t)
 		@
 		
 	parseEquation: (equation) ->
@@ -407,8 +407,8 @@ class JSAnimation extends Animation
 		if es is [0,0,1,1].toString() then (x) -> x
 		else beziers[ID] or= bezier(equation[0], equation[1], equation[2], equation[3], @duration * 2, (1000 / 60 / @duration) / 4)
 		
-	compute: (from, to, δ) ->
-		(to - from) * δ + from
+	compute: (from, to, delta) ->
+		(to - from) * delta + from
 
 	numbers: (s) ->
 		ns = []
@@ -516,7 +516,7 @@ class Animations
 		@animations = {}
 		
 	retrieve: (node, property) ->
-		uid = node.µid ?= (@uid++).toString(36)
+		uid = node['µid'] ?= (@uid++).toString(36)
 		animation = @animations[uid] or= {}
 		animation[property] or= if CSSTransition then new CSSAnimation(node, property) else new JSAnimation(node, property)
 	
@@ -573,7 +573,7 @@ class Animations
 		for property, value of styles
 			set = setter(property = camelize(property))
 			for node in nodes
-				@animations[node.µid]?[property]?.stop(true)
+				@animations[node['µid']]?[property]?.stop(true)
 				set.call(node, value) 
 		@
 
