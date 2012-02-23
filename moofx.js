@@ -11,11 +11,11 @@ license: MIT (http://mootools.net/license.txt)
 
 (function(){
 
-var Animation, Animations, CSSAnimation, CSSBorderColorParsers, CSSBorderParsers, CSSBorderStyleParser, CSSColorParser, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, µ, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
+var Animation, Animations, CSSAnimation, CSSBorderColorParsers, CSSBorderParsers, CSSBorderStyleParser, CSSColorParser, CSSLengthParser, CSSLengthParsers, CSSNumberParser, CSSParser, CSSParsers, CSSStringParser, CSSTransform, CSSTransformParser, CSSTransition, CSSTransitionEnd, CSSZindexParser, HEXtoRGB, HSLtoRGB, HUEtoRGB, JSAnimation, RGBtoRGB, animations, bd, bezier, beziers, browser, callbacks, camelize, cancelFrame, clean, color, colors, computedStyle, cssText, d, equations, filterName, getter, getters, html, hyphenate, item, iterator, matchOp, mirror4, moofx, mu, name, number, parsers, pixelRatio, requestAnimationFrame, requestFrame, running, setter, setters, string, t, test, tlbl, trbl, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5,
 	__hasProp = Object.prototype.hasOwnProperty,
 	__extends = function(child, parent){ for (var key in parent){ if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor(){ this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
-µ = function(nod){
+mu = function(nod){
 	this.valueOf = function(){
 		return nod;
 	};
@@ -26,11 +26,11 @@ moofx = function(nod){
 	if (!nod){
 		return null;
 	} else {
-		return new µ(nod.length != null ? nod : nod.nodeType === 1 ? [nod] : []);
+		return new mu(nod.length != null ? nod : nod.nodeType === 1 ? [nod] : []);
 	}
 };
 
-moofx.prototype = µ.prototype;
+moofx.prototype = mu.prototype;
 
 colors = {
 	maroon: '#800000',
@@ -866,20 +866,20 @@ JSAnimation = (function(_super){
 	};
 
 	JSAnimation.prototype.step = function(now){
-		var f, i, tpl, ƒ, δ, _len7, _ref5;
+		var delta, f, factor, i, tpl, _len7, _ref5;
 		this.time || (this.time = now);
-		ƒ = (now - this.time) / this.duration;
-		if (ƒ > 1) ƒ = 1;
-		δ = this.equation(ƒ);
+		factor = (now - this.time) / this.duration;
+		if (factor > 1) factor = 1;
+		delta = this.equation(factor);
 		tpl = this.template;
 		_ref5 = this.from;
 		for (i = 0, _len7 = _ref5.length; i < _len7; i++){
 			f = _ref5[i];
 			t = this.to[i];
-			tpl = tpl.replace('@', t !== f ? this.compute(f, t, δ) : t);
+			tpl = tpl.replace('@', t !== f ? this.compute(f, t, delta) : t);
 		}
 		this.setter.call(this.node, tpl);
-		if (ƒ !== 1){
+		if (factor !== 1){
 			requestFrame(this.bstep);
 		} else {
 			this.callback(t);
@@ -901,8 +901,8 @@ JSAnimation = (function(_super){
 		}
 	};
 
-	JSAnimation.prototype.compute = function(from, to, δ){
-		return (to - from) * δ + from;
+	JSAnimation.prototype.compute = function(from, to, delta){
+		return (to - from) * delta + from;
 	};
 
 	JSAnimation.prototype.numbers = function(s){
@@ -1043,7 +1043,7 @@ Animations = (function(){
 
 	Animations.prototype.retrieve = function(node, property){
 		var animation, uid, _base, _ref6;
-		uid = (_ref6 = node.µid) != null ? _ref6 : node.µid = (this.uid++).toString(36);
+		uid = (_ref6 = node['µid']) != null ? _ref6 : node['µid'] = (this.uid++).toString(36);
 		animation = (_base = this.animations)[uid] || (_base[uid] = {});
 		return animation[property] || (animation[property] = CSSTransition ? new CSSAnimation(node, property) : new JSAnimation(node, property));
 	};
@@ -1115,7 +1115,7 @@ Animations = (function(){
 			set = setter(property = camelize(property));
 			for (_p = 0, _len8 = nodes.length; _p < _len8; _p++){
 				node = nodes[_p];
-				if ((_ref6 = this.animations[node.µid]) != null){
+				if ((_ref6 = this.animations[node['µid']]) != null){
 					if ((_ref7 = _ref6[property]) != null) _ref7.stop(true);
 				}
 				set.call(node, value);
