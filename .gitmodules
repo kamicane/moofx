@@ -4,3 +4,6 @@
 [submodule "node_modules/coffee-script"]
 	path = node_modules/coffee-script
 	url = https://github.com/jashkenas/coffee-script.git
+[submodule "node_modules/semver"]
+	path = node_modules/semver
+	url = https://github.com/isaacs/node-semver.git

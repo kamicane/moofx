@@ -1,5 +1,6 @@
 {compile} = require('coffee-script')
 {parser, uglify} = require('uglify-js')
+semver = require('semver')
 
 # native requires
 {spawn} = require('child_process')
@@ -18,6 +19,12 @@ packager = require('./packager')
 sources = ['./src/color.coffee', './src/frame.coffee', './src/bezier.coffee', './src/index.coffee']
 
 # helpers
+
+bump = () ->
+	json = JSON.parse(readFileSync('./package.json'))
+	json.version = semver.inc(json.version, 'build')
+	print "version bumped to #{json.version}\n"
+	writeFileSync('./package.json', JSON.stringify(json, null, "\t"))
 	
 coffeize = (src, emsg) ->
 	try
@@ -49,7 +56,7 @@ makelib = () ->
 	return null
 	
 makebrowser = (nomin) ->
-	
+
 	pkg = new packager('./package.json')
 	js = pkg.build()
 	
@@ -87,8 +94,13 @@ makewatch = () ->
 					filedata = newfiledata
 
 module.exports =
-	watch: makewatch
+	watch: () ->
+		bump()
+		makewatch()
 	browser: () ->
+		bump()
 		makelib()
 		makebrowser()
-	lib: makelib
+	lib: () ->
+		bump()
+		makelib()
