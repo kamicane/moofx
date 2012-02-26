@@ -15,7 +15,7 @@ packager = require('./packager')
 
 # sources
 
-sources = ['./src/color.coffee', './src/frame.coffee', './src/bezier.coffee', './src/moofx.coffee']
+sources = ['./src/color.coffee', './src/frame.coffee', './src/bezier.coffee', './src/index.coffee']
 
 # helpers
 	

@@ -1,10 +1,10 @@
 {
 	"name": "moofx",
 	"description": "A CSS3-enabled javascript animation library on caffeine",
-	"version": "3.0.0-32-y",
+	"version": "3.0.0-33-y",
 	"license": "MIT (http://mootools.net/license.txt)",
-	"main": "./lib/moofx.js",
-	"keywords": ["moofx", "fx", "animation", "transition", "effects", "ender"],
+	"main": "./lib/index.js",
+	"keywords": ["moofx", "fx", "animation", "transition", "effects"],
 	"homepage": "http://moofx.it",
 	"author": "Valerio Proietti <@kamicane> (http://mad4milk.net)",
 	"bugs": "https://github.com/kamicane/moofx/issues",

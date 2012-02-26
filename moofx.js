@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.0-32-y
+version: 3.0.0-33-y
 description: A CSS3-enabled javascript animation library on caffeine
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -23,9 +23,9 @@ license: MIT (http://mootools.net/license.txt)
 	window.moofx = require("moofx");
 })({
 	moofx: {
-		main: "moofx",
+		main: "index",
 		modules: {
-			moofx: function(module, require, exports, global) {
+			index: function(module, require, exports, global) {
 				var Animation, Animations, BorderColorParser, BorderParser, BorderStyleParser, CSSAnimation, ColorParser, JSAnimation, LengthParser, LengthsParser, NumberParser, Parser, Parsers, StringParser, TransformParser, ZIndexParser, animations, bd, bezier, beziers, camelize, cancelFrame, clean, color, computedStyle, cssText, d, equations, filterName, frame, get, getters, html, hyphenate, item, matchOp, mirror4, moofx, mu, name, number, parsers, pixelRatio, requestFrame, set, setters, string, t, test, tlbl, transformName, transitionEndName, transitionName, translations, trbl, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
 					for (var key in parent) __hasProp.call(parent, key) && (child[key] = parent[key]);
 					function ctor() {
