@@ -1,5 +1,7 @@
+.gitmodules
+.gitignore
+.DS_Store
 *.html
-Cakefile
 compile
 src/*
 node_modules/*
