@@ -11,23 +11,26 @@ iterator = (time = +(new Date)) ->
 	callbacks.splice(--i, 1)[0](time) while i
 	null
 
-requestAnimationFrame =
-window.requestAnimationFrame or
-window.webkitRequestAnimationFrame or
-window.mozRequestAnimationFrame or
-window.oRequestAnimationFrame or
-window.msRequestAnimationFrame or (callback) ->
-	setTimeout(callback, 1000 / 60)
+if (typeof window isnt 'undefined')
+	requestAnimationFrame = window.requestAnimationFrame or
+	window.webkitRequestAnimationFrame or
+	window.mozRequestAnimationFrame or
+	window.oRequestAnimationFrame or
+	window.msRequestAnimationFrame
+	
+requestAnimationFrame or= (callback) -> setTimeout(callback, 1000 / 60)
 
 # public
 
-moofx.requestFrame = (callback) ->
-	callbacks.push(callback)
-	if not running
-		running = yes
-		requestAnimationFrame(iterator)
-	@
+module.exports =
 
-moofx.cancelFrame = (match) ->
-	callbacks.splice(i, 1) for callback, i in callbacks when callback is match
-	@
+	request: (callback) ->
+		callbacks.push(callback)
+		if not running
+			running = yes
+			requestAnimationFrame(iterator)
+		@
+
+	cancel: (match) ->
+		callbacks.splice(i, 1) for callback, i in callbacks when callback is match
+		@

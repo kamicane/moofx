@@ -1,25 +1,22 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-	<title>Jasmine Spec Runner</title>
-
-	<link rel="shortcut icon" type="image/png" href="jasmine/jasmine_favicon.png">
-
-	<link rel="stylesheet" type="text/css" href="jasmine/jasmine.css">
-	<script type="text/javascript" src="jasmine/jasmine.js"></script>
-	<script type="text/javascript" src="jasmine/jasmine-html.js"></script>
-
-	<!-- include source files here... -->
-	<script type="text/javascript" src="../lib/moofx.js"></script>
-	<script type="text/javascript" src="../lib/color.js"></script>
-	<script type="text/javascript" src="../lib/frame.js"></script>
-	<script type="text/javascript" src="../lib/animation.js"></script>
-
-	<!-- include spec files here... -->
-	<script type="text/javascript" src="src/parsers.js"></script>
-	<script type="text/javascript" src="src/getters.js"></script>
-	<script type="text/javascript" src="src/frame.js"></script>
+	<meta charset="utf-8">
+	<title>Mocha Tests</title>
+	<link rel="stylesheet" href="https://raw.github.com/visionmedia/mocha/master/mocha.css" />
+	<script src="https://raw.github.com/LearnBoost/expect.js/d2440da086bf8dc38c6085641f23b968a0f48b29/expect.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="https://raw.github.com/visionmedia/mocha/master/mocha.js"></script>
+	
+	<script>
+		mocha.setup('bdd')
+		$(function(){mocha.run()})
+	</script>
+	
+	<script type="text/javascript" src="../moofx.js"></script>
+	
+	<script src="test.parsers.js"></script>
+	<script src="test.frame.js"></script>
+	<script src="test.accessor.js"></script>
 	
 	<style type="text/css">
 		#test {
@@ -42,25 +39,11 @@
 			border: 2px dotted red;
 		}
 	</style>
-
 </head>
-
+<div id="test">
+	<div id="testee">some text</div>
+</div>
 <body>
-	<div id="test">
-		<div id="testee">some text</div>
-	</div>
-	
-	<script type="text/javascript">
-		(function() {
-			var jasmineEnv = jasmine.getEnv();
-			jasmineEnv.updateInterval = 1000;
-			var trivialReporter = new jasmine.TrivialReporter();
-			jasmineEnv.addReporter(trivialReporter);
-			jasmineEnv.specFilter = function(spec) {
-				return trivialReporter.specFilter(spec);
-			};
-			jasmineEnv.execute();
-		})();
-	</script>
+	<div id="mocha"></div>
 </body>
 </html>

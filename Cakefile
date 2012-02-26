@@ -1,92 +1,104 @@
-{print} = require('util')
+# global requires
+{compile} = require('coffee-script')
+{parser, uglify} = require('uglify-js')
+
+# native requires
 {spawn} = require('child_process')
+{readFileSync, writeFileSync, watch} = require('fs')
 {request} = require('http')
 {stringify} = require('querystring')
-{readFileSync, writeFileSync} = require('fs')
+{print} = require('util')
+path = require('path')
 
-# google closure compiler service api
+# local requires
+closurize = require('./support/closurize')
+packager = require('./support/packager')
 
-closure = (code, next) ->
+# sources
+
+sources = ['./src/color.coffee', './src/frame.coffee', './src/bezier.coffee', './src/moofx.coffee']
+
+# helpers
 	
-	data = stringify
-		compilation_level : 'SIMPLE_OPTIMIZATIONS'
-		# formatting: 'pretty_print'
-		output_format: 'text'
-		output_info: 'compiled_code'
-		warning_level : 'QUIET'
-		js_code : code
+coffeize = (src, emsg) ->
+	try
+		src = compile(src, bare: true)
+		return src
+	catch error
+		print "#{error} #{emsg}\n"
+		return null
 		
-	options =
-		host: 'closure-compiler.appspot.com'
-		port: '80'
-		path: '/compile'
-		method: 'POST'
-		headers:
-			'Content-Type': 'application/x-www-form-urlencoded'
-			'Content-Length': data.length
-			
-	req = request options, (res) ->
-		res.setEncoding('utf8')
-		data = ""
-		res.on('data', (chunk) -> data += chunk)
-		res.on('end', () -> next?(data))
+unspace = (src) ->
+	return src.replace(`/    /g`, "\t");
+	
+makecoffee = (coffee) ->
+	newfile = './lib/' + path.basename(coffee, '.coffee') + '.js'
+	src = readFileSync(coffee).toString()
+	js = coffeize(src, "while compiling #{coffee}")
+
+	if js isnt null	
+		ast = parser.parse(js)
+		ast = uglify.ast_lift_variables(ast)
+		js = uglify.gen_code(ast, beautify: true)
+		writeFileSync(newfile, unspace(js))
+		print "compiled #{coffee} to #{newfile}\n"
+		return true
 		
-	req.write(data)
-	req.end()
+	return false
 	
-# read json for niceties
-
-json = JSON.parse(readFileSync("./package.json"))
-name = json.name
-
-header = "/*\n
----\n
-provides: #{name}\n
-version: #{json.version}\n
-description: #{json.description}\n
-website: #{json.homepage}\n
-author: #{json.author}\n
-license: #{json.license}\n
-...\n
-*/\n"
-
-startBoilerplate = "\n(function(){\n\n"
-
-endBoilerplate = "\n
-typeof module !== 'undefined' ? module.exports = #{name}: window.#{name} = #{name};\n\n
-})();"
-
-task 'test', 'compiles lib/ from src/', () ->
-	print("compiling lib/ from src/ …\n")
-	coffee = spawn('coffee', ['--bare', '--compile', '--output', 'lib/', 'src/'])
+makejs = () ->
+	makecoffee(coffee) for coffee in sources
+	return null
 	
-	coffee.stdout.on('data', (data) -> print data.toString())
-	coffee.on('exit', (code) -> print("src/ was compiled on lib/\n") if code is 0)
-
-task 'watch', 'compiles lib/ from src/ and watches src', ->
-	print("watching /src for changes …\n")
-	coffee = spawn('coffee', ['--bare', '--watch', '--compile', '--output', 'lib/', 'src/'])
+makebrowser = (nomin) ->
 	
-	coffee.stdout.on('data', (data) -> print(data.toString()))
+	pkg = new packager('./package.json')
+	js = pkg.build()
 	
-task 'build', 'compiles a single file from src/', () ->
-	print("compiling javascript code from src/ …\n")
-	coffee = spawn('coffee', ['--bare', '--print', '--join', '--compile'].concat(json.coffeescripts))
+	ast = parser.parse(js)
+	ast = uglify.ast_lift_variables(ast)
+	
+	niceast = uglify.ast_squeeze(ast, make_seqs: false)
+	nicejs = uglify.gen_code(niceast, beautify: true)
+	writeFileSync('./moofx.js', unspace("#{pkg.header}\n#{nicejs}"))
+	print "packaged ./moofx.js\n"
+	
+	return if nomin
+	
+	badast = uglify.ast_mangle(ast)
+	badast = uglify.ast_squeeze(badast)
+	badjs = uglify.gen_code(badast)
+	# badjs = js
+	writeFileSync('./moofx-min.js', unspace("#{pkg.header}\n#{badjs}"))
+	print "packaged ./moofx-min.js\n"
+	print "done.\n"
+	
+	# print "contacting google closure service api ...\n"
+	# closurize badjs, (data) ->
+	# 	print "writing ./moofx-min.js ...\n"
+	# 	writeFileSync('./moofx-min.js', data)
+	# 	print "done.\n"
 
-	data = startBoilerplate
+# tasks
 
-	coffee.stdout.on('data', (d) -> data += d.toString())
+task "browser", "compiles a single moofx.js for browsers", () ->
+	makejs()
+	makebrowser()
 
-	coffee.on 'exit', (code) ->
-		
-		data += endBoilerplate
-		
-		nicedata = data.replace(`/  /g`, '\t').replace(`/\) \{/g`, '){')
-		writeFileSync("./#{name}.js", "#{header}#{nicedata}")
-		print("finished writing #{name}.js\n")
-		print("sending javascript code to google closure REST API …\n")
-		closure data, (compiled) ->
-			if compiled
-				writeFileSync("#{name}-min.js", "#{header}#{compiled}")
-				print("finished writing #{name}-min.js\n")
-			else print("error writing #{name}.js\n")
+task "node", "compiles moofx in lib/ for node.js", makejs
+
+task "watch", "same as test, but recompiles on changes", () ->
+	makejs()
+	makebrowser(true)
+	
+	print "watching ...\n"
+
+	for coffee in sources
+		do (coffee) ->
+			filedata = readFileSync(coffee).toString()
+			watch coffee, (event) ->
+				newfiledata = readFileSync(coffee).toString()
+				if newfiledata isnt filedata
+					if makecoffee(coffee) then makebrowser(true)
+					filedata = newfiledata
+

@@ -55,7 +55,7 @@ HSLtoRGB = (h, s, l, a = 1) ->
 	[r * 255, g * 255, b * 255, a]
 	
 
-moofx.color = (input, array) ->
+module.exports = (input, array) ->
 	return null unless typeof input is 'string' # not a string
 	input = colors[input = input.replace(/\s+/g, '')] or input
 	if input.match(/^#[a-f0-9]{3,8}/) then input = HEXtoRGB(input.replace('#', ''))

@@ -1,0 +1,6 @@
+*.html
+Cakefile
+src/*
+node_modules/*
+test/*
+support/*
