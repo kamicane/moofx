@@ -38,7 +38,6 @@ makecoffee = (coffee) ->
 
 	if js isnt null	
 		ast = parser.parse(js)
-		ast = uglify.ast_lift_variables(ast)
 		js = uglify.gen_code(ast, beautify: true)
 		writeFileSync(newfile, unspace(js))
 		print "compiled #{coffee} to #{newfile}\n"
@@ -56,7 +55,6 @@ makebrowser = (nomin) ->
 	js = pkg.build()
 	
 	ast = parser.parse(js)
-	ast = uglify.ast_lift_variables(ast)
 	
 	niceast = uglify.ast_squeeze(ast, make_seqs: false)
 	nicejs = uglify.gen_code(niceast, beautify: true)
@@ -66,18 +64,13 @@ makebrowser = (nomin) ->
 	return if nomin
 	
 	badast = uglify.ast_mangle(ast)
+	badast = uglify.ast_lift_variables(badast)
 	badast = uglify.ast_squeeze(badast)
 	badjs = uglify.gen_code(badast)
-	# badjs = js
+
 	writeFileSync('./moofx-min.js', unspace("#{pkg.header}\n#{badjs}"))
 	print "packaged ./moofx-min.js\n"
 	print "done.\n"
-	
-	# print "contacting google closure service api ...\n"
-	# closurize badjs, (data) ->
-	# 	print "writing ./moofx-min.js ...\n"
-	# 	writeFileSync('./moofx-min.js', data)
-	# 	print "done.\n"
 
 # tasks
 

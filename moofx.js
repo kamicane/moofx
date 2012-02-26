@@ -25,8 +25,8 @@ license: MIT (http://mootools.net/license.txt)
 	moofx: {
 		main: "moofx",
 		modules: {
-			moofx: function(module, require) {
-				var Animation, Animations, CSSAnimation, JSAnimation, animations, bd, beziers, d, equations, filterName, item, matchOp, moofx, mu, name, t, transformName, transitionEndName, transitionName, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+			moofx: function(module, require, exports, global) {
+				var Animation, Animations, BorderColorParser, BorderParser, BorderStyleParser, CSSAnimation, ColorParser, JSAnimation, LengthParser, LengthsParser, NumberParser, Parser, Parsers, StringParser, TransformParser, ZIndexParser, animations, bd, bezier, beziers, camelize, cancelFrame, clean, color, computedStyle, cssText, d, equations, filterName, frame, get, getters, html, hyphenate, item, matchOp, mirror4, moofx, mu, name, number, parsers, pixelRatio, requestFrame, set, setters, string, t, test, tlbl, transformName, transitionEndName, transitionName, translations, trbl, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
 					for (var key in parent) __hasProp.call(parent, key) && (child[key] = parent[key]);
 					function ctor() {
 						this.constructor = child;
@@ -35,31 +35,47 @@ license: MIT (http://mootools.net/license.txt)
 					child.prototype = new ctor;
 					child.__super__ = parent.prototype;
 					return child;
-				}, color = require("moofx/color"), frame = require("moofx/frame"), bezier = require("moofx/bezier"), cancelFrame = frame.cancel, requestFrame = frame.request, string = String, number = parseFloat, camelize = function(self) {
+				};
+				color = require("moofx/color");
+				frame = require("moofx/frame");
+				bezier = require("moofx/bezier");
+				cancelFrame = frame.cancel;
+				requestFrame = frame.request;
+				string = String;
+				number = parseFloat;
+				camelize = function(self) {
 					return self.replace(/-\D/g, function(match) {
 						return match.charAt(1).toUpperCase();
 					});
-				}, hyphenate = function(self) {
+				};
+				hyphenate = function(self) {
 					return self.replace(/[A-Z]/g, function(match) {
 						return "-" + match.charAt(0).toLowerCase();
 					});
-				}, clean = function(self) {
+				};
+				clean = function(self) {
 					return string(self).replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-				}, mirror4 = function(values) {
-					var length = values.length;
+				};
+				mirror4 = function(values) {
+					var length;
+					length = values.length;
 					length === 1 ? values.push(values[0], values[0], values[0]) : length === 2 ? values.push(values[0], values[1]) : length === 3 && values.push(values[1]);
 					return values;
-				}, computedStyle = typeof getComputedStyle != "undefined" ? function(node) {
-					var cts = getComputedStyle(node);
+				};
+				computedStyle = typeof getComputedStyle != "undefined" ? function(node) {
+					var cts;
+					cts = getComputedStyle(node);
 					return function(property) {
 						return cts ? cts.getPropertyValue(hyphenate(property)) : "";
 					};
 				} : function(node) {
-					var cts = node.currentStyle;
+					var cts;
+					cts = node.currentStyle;
 					return function(property) {
 						return cts ? cts[camelize(property)] : "";
 					};
-				}, Parser = function() {
+				};
+				Parser = function() {
 					function Parser() {}
 					Parser.prototype.extract = function() {
 						return [ this ];
@@ -68,14 +84,16 @@ license: MIT (http://mootools.net/license.txt)
 						return string(this.value);
 					};
 					return Parser;
-				}(), StringParser = function(_super) {
+				}();
+				StringParser = function(_super) {
 					__extends(StringParser, _super);
 					function StringParser(value) {
 						value == null && (value = "");
 						this.value = string(value);
 					}
 					return StringParser;
-				}(Parser), NumberParser = function(_super) {
+				}(Parser);
+				NumberParser = function(_super) {
 					__extends(NumberParser, _super);
 					function NumberParser(value) {
 						var n;
@@ -83,7 +101,8 @@ license: MIT (http://mootools.net/license.txt)
 						this.value = isFinite(n = number(value)) ? n : value;
 					}
 					return NumberParser;
-				}(Parser), Parsers = function() {
+				}(Parser);
+				Parsers = function() {
 					function Parsers() {}
 					Parsers.prototype.extract = function() {
 						return this.parsed;
@@ -91,7 +110,9 @@ license: MIT (http://mootools.net/license.txt)
 					Parsers.prototype.toString = function(normalize, node) {
 						var parser;
 						return clean(function() {
-							var _i, _len, _ref = this.parsed, _results = [];
+							var _i, _len, _ref, _results;
+							_ref = this.parsed;
+							_results = [];
 							for (_i = 0, _len = _ref.length; _i < _len; _i++) {
 								parser = _ref[_i];
 								_results.push(parser.toString(normalize, node));
@@ -100,7 +121,8 @@ license: MIT (http://mootools.net/license.txt)
 						}.call(this).join(" "));
 					};
 					return Parsers;
-				}(), LengthParser = function(_super) {
+				}();
+				LengthParser = function(_super) {
 					__extends(LengthParser, _super);
 					function LengthParser(value) {
 						var match;
@@ -114,7 +136,8 @@ license: MIT (http://mootools.net/license.txt)
 						return this.value === "auto" ? this.value : normalize && this.value === "" ? "0px" : this.value === "" ? "" : node && this.unit !== "px" ? "" + pixelRatio(node, this.unit) * this.value + "px" : this.value + this.unit;
 					};
 					return LengthParser;
-				}(Parser), ColorParser = function(_super) {
+				}(Parser);
+				ColorParser = function(_super) {
 					__extends(ColorParser, _super);
 					function ColorParser(value) {
 						value === "transparent" && (value = "#00000000");
@@ -124,14 +147,16 @@ license: MIT (http://mootools.net/license.txt)
 						return normalize && !this.value ? "rgba(0,0,0,1)" : this.value ? !!normalize || this.value !== "transparent" && this.value[3] !== 0 ? normalize || this.value[3] !== 1 ? "rgba(" + this.value + ")" : "rgb(" + this.value[0] + "," + this.value[1] + "," + this.value[2] + ")" : "transparent" : "";
 					};
 					return ColorParser;
-				}(Parser), LengthsParser = function(_super) {
+				}(Parser);
+				LengthsParser = function(_super) {
 					__extends(LengthsParser, _super);
 					function LengthsParser(value) {
 						var i, v, values;
 						value == null && (value = "");
 						values = mirror4(clean(value).split(" "));
 						this.parsed = function() {
-							var _len, _results = [];
+							var _len, _results;
+							_results = [];
 							for (i = 0, _len = values.length; i < _len; i++) {
 								v = values[i];
 								_results.push(new LengthParser(v));
@@ -140,7 +165,8 @@ license: MIT (http://mootools.net/license.txt)
 						}();
 					}
 					return LengthsParser;
-				}(Parsers), BorderStyleParser = function(_super) {
+				}(Parsers);
+				BorderStyleParser = function(_super) {
 					__extends(BorderStyleParser, _super);
 					function BorderStyleParser(value) {
 						var match;
@@ -152,7 +178,8 @@ license: MIT (http://mootools.net/license.txt)
 						return normalize && !this.value ? "none" : this.value;
 					};
 					return BorderStyleParser;
-				}(Parser), BorderParser = function(_super) {
+				}(Parser);
+				BorderParser = function(_super) {
 					__extends(BorderParser, _super);
 					function BorderParser(value) {
 						var match, _ref, _ref2, _ref3;
@@ -162,14 +189,16 @@ license: MIT (http://mootools.net/license.txt)
 						this.parsed = [ new LengthParser((_ref = match[1]) != null ? _ref : ""), new BorderStyleParser((_ref2 = match[2]) != null ? _ref2 : ""), new ColorParser((_ref3 = match[3]) != null ? _ref3 : "") ];
 					}
 					return BorderParser;
-				}(Parsers), BorderColorParser = function(_super) {
+				}(Parsers);
+				BorderColorParser = function(_super) {
 					__extends(BorderColorParser, _super);
 					function BorderColorParser(colors) {
 						var c;
 						colors == null && (colors = "");
 						colors = mirror4(colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) || [ "" ]);
 						this.parsed = function() {
-							var _i, _len, _results = [];
+							var _i, _len, _results;
+							_results = [];
 							for (_i = 0, _len = colors.length; _i < _len; _i++) {
 								c = colors[_i];
 								_results.push(new ColorParser(c));
@@ -178,16 +207,19 @@ license: MIT (http://mootools.net/license.txt)
 						}();
 					}
 					return BorderColorParser;
-				}(Parsers), ZIndexParser = function(_super) {
+				}(Parsers);
+				ZIndexParser = function(_super) {
 					__extends(ZIndexParser, _super);
 					function ZIndexParser(value) {
 						this.value = value === "auto" ? value : number(value);
 					}
 					return ZIndexParser;
-				}(Parser), TransformParser = function(_super) {
+				}(Parser);
+				TransformParser = function(_super) {
 					__extends(TransformParser, _super);
 					function TransformParser(value) {
-						var v, _fn, _i, _len, transforms = {
+						var transforms, v, _fn, _i, _len;
+						transforms = {
 							translate: "0px,0px",
 							rotate: "0deg",
 							scale: "1,1",
@@ -238,7 +270,9 @@ license: MIT (http://mootools.net/license.txt)
 					TransformParser.prototype.toString = function() {
 						var name;
 						return function() {
-							var _i, _len, _ref = [ "translate", "rotate", "scale", "skew" ], _results = [];
+							var _i, _len, _ref, _results;
+							_ref = [ "translate", "rotate", "scale", "skew" ];
+							_results = [];
 							for (_i = 0, _len = _ref.length; _i < _len; _i++) {
 								name = _ref[_i];
 								_results.push("" + name + "(" + this.transforms[name] + ")");
@@ -247,22 +281,36 @@ license: MIT (http://mootools.net/license.txt)
 						}.call(this).join(" ");
 					};
 					return TransformParser;
-				}(Parser), parsers = {}, getters = {}, setters = {}, translations = {}, html = document.documentElement, get = function(key) {
+				}(Parser);
+				parsers = {};
+				getters = {};
+				setters = {};
+				translations = {};
+				html = document.documentElement;
+				get = function(key) {
 					return getters[key] || (getters[key] = function() {
-						var parser = parsers[key] || StringParser;
+						var parser;
+						parser = parsers[key] || StringParser;
 						return function() {
 							return (new parser(computedStyle(this)(key))).toString(!0, this);
 						};
 					}());
-				}, set = function(key) {
+				};
+				set = function(key) {
 					return setters[key] || (setters[key] = function() {
-						var parser = parsers[key] || StringParser;
+						var parser;
+						parser = parsers[key] || StringParser;
 						return function(value) {
 							return this.style[key] = (new parser(value)).toString();
 						};
 					}());
-				}, test = document.createElement("div"), cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;", pixelRatio = function(element, u) {
-					var parent = element.parentNode, ratio = 1;
+				};
+				test = document.createElement("div");
+				cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;";
+				pixelRatio = function(element, u) {
+					var parent, ratio;
+					parent = element.parentNode;
+					ratio = 1;
 					if (parent) {
 						test.style.cssText = cssText + ("width:100" + u + ";");
 						parent.appendChild(test);
@@ -270,7 +318,9 @@ license: MIT (http://mootools.net/license.txt)
 						parent.removeChild(test);
 					}
 					return ratio;
-				}, trbl = [ "Top", "Right", "Bottom", "Left" ], tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
+				};
+				trbl = [ "Top", "Right", "Bottom", "Left" ];
+				tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
 				parsers.color = parsers.backgroundColor = ColorParser;
 				parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = LengthParser;
 				for (_i = 0, _len = trbl.length; _i < _len; _i++) {
@@ -299,7 +349,8 @@ license: MIT (http://mootools.net/license.txt)
 					return getters[name] = function() {
 						var d;
 						return function() {
-							var _len5, _m, _results = [];
+							var _len5, _m, _results;
+							_results = [];
 							for (_m = 0, _len5 = trbl.length; _m < _len5; _m++) {
 								d = trbl[_m];
 								_results.push(get(name + d).call(this));
@@ -316,7 +367,8 @@ license: MIT (http://mootools.net/license.txt)
 				getters.borderRadius = function() {
 					var d;
 					return function() {
-						var _len5, _m, _results = [];
+						var _len5, _m, _results;
+						_results = [];
 						for (_m = 0, _len5 = trbl.length; _m < _len5; _m++) {
 							d = trbl[_m];
 							_results.push(get("border" + d + "Radius").call(this));
@@ -331,7 +383,8 @@ license: MIT (http://mootools.net/license.txt)
 					return getters["border" + t] = function() {
 						var d;
 						return function() {
-							var _len6, _n, _results = [];
+							var _len6, _n, _results;
+							_results = [];
 							for (_n = 0, _len6 = trbl.length; _n < _len6; _n++) {
 								d = trbl[_n];
 								_results.push(get("border" + d + t).call(this));
@@ -516,7 +569,9 @@ license: MIT (http://mootools.net/license.txt)
 						return (to - from) * delta + from;
 					};
 					JSAnimation.prototype.numbers = function(s) {
-						var ns = [], replaced = s.replace(/[-\d.]+/g, function(n) {
+						var ns, replaced;
+						ns = [];
+						replaced = s.replace(/[-\d.]+/g, function(n) {
 							ns.push(number(n));
 							return "@";
 						});
@@ -588,7 +643,9 @@ license: MIT (http://mootools.net/license.txt)
 						return null;
 					};
 					CSSAnimation.prototype.modCSS = function(inclusive) {
-						var e, rules = computedStyle(this.node), p = rules(transitionName + "Property").replace(/\s+/g, "").split(",");
+						var e, p, rules;
+						rules = computedStyle(this.node);
+						p = rules(transitionName + "Property").replace(/\s+/g, "").split(",");
 						d = rules(transitionName + "Duration").replace(/\s+/g, "").split(",");
 						e = rules(transitionName + "TimingFunction").replace(/\s+/g, "").match(/cubic-bezier\(([\d.,]+)\)/g);
 						this.removeProp("all", p, d, e);
@@ -617,7 +674,9 @@ license: MIT (http://mootools.net/license.txt)
 						this.animations = {};
 					}
 					Animations.prototype.retrieve = function(node, property) {
-						var _base, _ref6, uid = (_ref6 = node["µid"]) != null ? _ref6 : node["µid"] = (this.uid++).toString(36), animation = (_base = this.animations)[uid] || (_base[uid] = {});
+						var animation, uid, _base, _ref6;
+						uid = (_ref6 = node["µid"]) != null ? _ref6 : node["µid"] = (this.uid++).toString(36);
+						animation = (_base = this.animations)[uid] || (_base[uid] = {});
 						return animation[property] || (animation[property] = transitionName ? new CSSAnimation(node, property) : new JSAnimation(node, property));
 					};
 					Animations.prototype.starts = function(nodes, styles, options) {
@@ -671,7 +730,8 @@ license: MIT (http://mootools.net/license.txt)
 						return this;
 					};
 					Animations.prototype.start = function(nodes, property, value, options) {
-						var styles = {};
+						var styles;
+						styles = {};
 						styles[property] = value;
 						return this.starts(nodes, styles, options);
 					};
@@ -689,7 +749,8 @@ license: MIT (http://mootools.net/license.txt)
 						return this;
 					};
 					Animations.prototype.set = function(nodes, property, value) {
-						var styles = {};
+						var styles;
+						styles = {};
 						styles[property] = value;
 						return this.sets(nodes, styles);
 					};
@@ -725,8 +786,9 @@ license: MIT (http://mootools.net/license.txt)
 				moofx.color = color;
 				module.exports = moofx;
 			},
-			color: function(module) {
-				var colors = {
+			color: function(module, require, exports, global) {
+				var HEXtoRGB, HSLtoRGB, HUEtoRGB, RGBtoRGB, colors;
+				colors = {
 					maroon: "#800000",
 					red: "#ff0000",
 					orange: "#ffA500",
@@ -744,14 +806,16 @@ license: MIT (http://mootools.net/license.txt)
 					black: "#000000",
 					silver: "#c0c0c0",
 					gray: "#808080"
-				}, RGBtoRGB = function(r, g, b, a) {
+				};
+				RGBtoRGB = function(r, g, b, a) {
 					a == null && (a = 1);
 					r = parseInt(r, 10);
 					g = parseInt(g, 10);
 					b = parseInt(b, 10);
 					a = parseFloat(a);
 					return r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0 ? [ Math.round(r), Math.round(g), Math.round(b), a ] : null;
-				}, HEXtoRGB = function(hex) {
+				};
+				HEXtoRGB = function(hex) {
 					var h0, h1, h2, h3, i, _ref, _results;
 					hex.length === 3 && (hex += "f");
 					if (hex.length === 4) {
@@ -765,11 +829,13 @@ license: MIT (http://mootools.net/license.txt)
 					_results = [];
 					for (i = 0, _ref = hex.length; i <= _ref; i += 2) _results.push(parseInt(hex.substr(i, 2), 16) / (i === 6 ? 255 : 1));
 					return _results;
-				}, HUEtoRGB = function(p, q, t) {
+				};
+				HUEtoRGB = function(p, q, t) {
 					t < 0 && (t += 1);
 					t > 1 && (t -= 1);
 					return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-				}, HSLtoRGB = function(h, s, l, a) {
+				};
+				HSLtoRGB = function(h, s, l, a) {
 					var b, g, p, q, r;
 					a == null && (a = 1);
 					h /= 360;
@@ -803,8 +869,11 @@ license: MIT (http://mootools.net/license.txt)
 					return "rgb" + (input.length > 3 ? "a" : "") + "(" + input + ")";
 				};
 			},
-			frame: function(module) {
-				var requestAnimationFrame, callbacks = [], running = !1, iterator = function(time) {
+			frame: function(module, require, exports, global) {
+				var callbacks, iterator, requestAnimationFrame, running;
+				callbacks = [];
+				running = !1;
+				iterator = function(time) {
 					var i;
 					time == null && (time = +(new Date));
 					running = !1;
@@ -835,9 +904,13 @@ license: MIT (http://mootools.net/license.txt)
 					}
 				};
 			},
-			bezier: function(module) {
+			bezier: function(module, require, exports, global) {
 				module.exports = function(x1, y1, x2, y2, n, epsilon) {
-					var a, b, c, u, _x, _y, xs = [ 0 ], ys = [ 0 ], x = 0, i = 1;
+					var a, b, c, i, u, x, xs, ys, _x, _y;
+					xs = [ 0 ];
+					ys = [ 0 ];
+					x = 0;
+					i = 1;
 					while (i < n - 1) {
 						u = 1 / n * i;
 						a = Math.pow(1 - u, 2) * 3 * u;
@@ -855,7 +928,9 @@ license: MIT (http://mootools.net/license.txt)
 					xs.push(1);
 					ys.push(1);
 					return function(t) {
-						var middle, left = 0, right = xs.length - 1;
+						var left, middle, right;
+						left = 0;
+						right = xs.length - 1;
 						while (left <= right) {
 							middle = Math.floor((left + right) / 2);
 							if (xs[middle] === t) break;

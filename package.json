@@ -12,6 +12,6 @@
 		"type": "git",
 		"url": "https://github.com/kamicane/moofx.git"
 	},
-	"sources": ["./moofx.js", "./adapters/mootools.js"],
+	"sources": ["./lib/moofx.js", "./adapters/mootools.js"],
 	"ender": "./adapters/ender.js"
 }

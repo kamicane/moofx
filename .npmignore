@@ -4,3 +4,4 @@ src/*
 node_modules/*
 test/*
 support/*
+README.*
