@@ -5,3 +5,5 @@ node_modules/*
 test/*
 support/*
 README.*
+moofx.js
+moofx-min.js
