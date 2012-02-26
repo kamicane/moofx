@@ -116,8 +116,6 @@ moofx.color('hsla(0, 0, 0, 0)'); //rgba(0, 0, 0, 0)
 
 Include the pre-compiled moofx.js (or moofx-min.js) in the webpage of choice. Use it. Love it. Done.
 
-moofx can also be installed and depended on with npm (and [ender](http://ender.no.de/)) or [packager](https://github.com/kamicane/packager).
-
 ## adapters
 
 moofx was built to be used in conjuction with your favorite javascript framework. Some basic examples:
@@ -144,33 +142,24 @@ jQuery.fn.animate = function(){
 
 Then just get busy with your dollars.
 
-### ender integration
-
-moofx integrates nicely with [ender](http://ender.no.de/). While in ender (or in any other CommonJS env, for that matter), the moofx global variable will not be present.
-Refer to ender documentation for usage and installation of modules.
-
-moofx even comes with a default ender adapter, automatically available when building via ender, that can be used like this:
-
-``` javascript
-$('#box').animate(…); //same as above
-$('#box .boxes').style(…); //same as above
-
-$.requestFrame(…) //same as above
-$.cancelFrame(…) //same as above
-```
-
 ## develop
 
-moofx3 can be compiled using [cake](http://coffeescript.org/#cake), which is installed with coffeescript.
+First of all, you might want to git clone this repo + submodules. Then you need to have node installed.
 
-This is how you compile a single moofx.js (both uncompressed and google-closure-compiled) from the .coffee source:
-
-```
-cake build
-```
-
-This is how you automatically recompile the javascripts in lib/ when the source .coffees in /src change.
+This is how you compile lib/ from src/
 
 ```
-cake watch
+./compile lib
+```
+
+This is how you compile a single moofx.js (both uncompressed and uglified) from the src/, as well as the lib/ folder:
+
+```
+./compile browser
+```
+
+Or watch /src for changes and recompile everything
+
+```
+./compile watch
 ```

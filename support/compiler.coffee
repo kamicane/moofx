@@ -1,4 +1,3 @@
-# global requires
 {compile} = require('coffee-script')
 {parser, uglify} = require('uglify-js')
 
@@ -11,8 +10,8 @@
 path = require('path')
 
 # local requires
-closurize = require('./support/closurize')
-packager = require('./support/packager')
+closurize = require('./closurize')
+packager = require('./packager')
 
 # sources
 
@@ -45,7 +44,7 @@ makecoffee = (coffee) ->
 		
 	return false
 	
-makejs = () ->
+makelib = () ->
 	makecoffee(coffee) for coffee in sources
 	return null
 	
@@ -70,19 +69,11 @@ makebrowser = (nomin) ->
 
 	writeFileSync('./moofx-min.js', unspace("#{pkg.header}\n#{badjs}"))
 	print "packaged ./moofx-min.js\n"
-	print "done.\n"
 
-# tasks
+makewatch = () ->
 
-task "browser", "compiles a single moofx.js for browsers", () ->
-	makejs()
+	makelib()
 	makebrowser()
-
-task "node", "compiles moofx in lib/ for node.js", makejs
-
-task "watch", "same as test, but recompiles on changes", () ->
-	makejs()
-	makebrowser(true)
 	
 	print "watching ...\n"
 
@@ -92,6 +83,12 @@ task "watch", "same as test, but recompiles on changes", () ->
 			watch coffee, (event) ->
 				newfiledata = readFileSync(coffee).toString()
 				if newfiledata isnt filedata
-					if makecoffee(coffee) then makebrowser(true)
+					if makecoffee(coffee) then makebrowser()
 					filedata = newfiledata
 
+module.exports =
+	watch: makewatch
+	browser: () ->
+		makelib()
+		makebrowser()
+	lib: makelib

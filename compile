@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+require("coffee-script")
+compiler = require("./support/compiler")
+
+var what = process.argv[2] || 'browser'
+
+if (compiler[what]) compiler[what]()
+else console.log("command " + what + " not found")
