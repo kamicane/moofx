@@ -1,7 +1,7 @@
 {
 	"name": "moofx",
 	"description": "A CSS3-enabled javascript animation library on caffeine",
-	"version": "3.0.0-31-y",
+	"version": "3.0.0-32-y",
 	"license": "MIT (http://mootools.net/license.txt)",
 	"main": "./lib/moofx.js",
 	"keywords": ["moofx", "fx", "animation", "transition", "effects", "ender"],
