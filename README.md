@@ -148,6 +148,7 @@ you can build moofx (+dependency) from source with [wrapup](https://github.com/k
 ```
 npm install -g wrapup
 mkdir webdev
+cd webdev
 npm install moofx
 wrup -r moofx -g yes -w no -o moofx.js
 wrup -r moofx -g yes -w no -c -o moofx-min.js
