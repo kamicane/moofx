@@ -1,7 +1,6 @@
 # moofx 3
 
-moofx3 is a css3-enabled javascript animation library on caffeine.
-moofx3 is written in [coffeescript](http://coffeescript.org), which is a neat language that compiles to fast javascript code.
+moofx3 is a css3-enabled javascript animation library on caffeine. :~)
 
 ## features
 
@@ -114,7 +113,7 @@ moofx.color('hsla(0, 0, 0, 0)'); //rgba(0, 0, 0, 0)
 
 ## installation
 
-Include the pre-compiled moofx.js (or moofx-min.js) in the webpage of choice. Use it. Love it. Done.
+Include the pre-built moofx.js (or moofx-min.js) in the webpage of choice. Use it. Love it. Done.
 
 ## adapters
 
@@ -142,24 +141,15 @@ jQuery.fn.animate = function(){
 
 Then just get busy with your dollars.
 
-## develop
+## BIY (build-it-yourself)
 
-First of all, you might want to git clone this repo + submodules. Then you need to have node installed.
-
-This is how you compile lib/ from src/
+you can build moofx (+dependency) from source with [wrapup](https://github.com/kamicane/wrapup)
 
 ```
-./compile lib
-```
-
-This is how you compile a single moofx.js (both uncompressed and uglified) from the src/, as well as the lib/ folder:
-
-```
-./compile browser
-```
-
-Or watch /src for changes and recompile everything
-
-```
-./compile watch
+npm install -g wrapup
+mkdir webdev
+npm install moofx
+wrup -r moofx -g yes -w no -o moofx.js
+wrup -r moofx -g yes -w no -c -o moofx-min.js
+wrup --help
 ```
