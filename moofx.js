@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.1
+version: 3.0.2
 description: A CSS3-enabled javascript animation library on caffeine
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -10,7 +10,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 ...
 */
 
-(function(modules, versions, mains) {
+(function(modules) {
     var cache = {}, require = function(id) {
         var module;
         if (module = cache[id]) return module.exports;
@@ -21,9 +21,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         modules[id].call(exports, require, module, exports, window);
         return module.exports;
     };
-    window["moofx"] = require("moofx@3.0.0-40/lib/index");
+    window.moofx = require("0");
 })({
-    "moofx@3.0.0-40/lib/index": function(require, module, exports, global) {
+    "0": function(require, module, exports, global) {
         var Animation, Animations, BorderColorParser, BorderParser, BorderStyleParser, CSSAnimation, ColorParser, JSAnimation, LengthParser, LengthsParser, NumberParser, Parser, Parsers, StringParser, TransformParser, ZIndexParser, animations, bd, bezier, beziers, camelize, cancelFrame, clean, color, computedStyle, cssText, d, equations, filterName, frame, get, getters, html, hyphenate, item, matchOp, mirror4, moofx, mu, name, number, parsers, pixelRatio, requestFrame, set, setters, string, t, test, tlbl, transformName, transitionEndName, transitionName, translations, trbl, _fn, _fn2, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _ref, _ref2, _ref3, _ref4, _ref5, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
             for (var key in parent) __hasProp.call(parent, key) && (child[key] = parent[key]);
             function ctor() {
@@ -34,9 +34,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             child.__super__ = parent.prototype;
             return child;
         };
-        bezier = require("cubic-bezier@0.0.3/index");
-        color = require("moofx@3.0.0-40/lib/color");
-        frame = require("moofx@3.0.0-40/lib/frame");
+        bezier = require("1");
+        color = require("2");
+        frame = require("3");
         cancelFrame = frame.cancel;
         requestFrame = frame.request;
         string = String;
@@ -60,7 +60,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             length === 1 ? values.push(values[0], values[0], values[0]) : length === 2 ? values.push(values[0], values[1]) : length === 3 && values.push(values[1]);
             return values;
         };
-        computedStyle = typeof getComputedStyle != "undefined" ? function(node) {
+        computedStyle = global.getComputedStyle ? function(node) {
             var cts;
             cts = getComputedStyle(node);
             return function(property) {
@@ -561,7 +561,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 ID = "" + es + ":" + this.duration + "ms";
                 return es === [ 0, 0, 1, 1 ].toString() ? function(x) {
                     return x;
-                } : beziers[ID] || (beziers[ID] = bezier(equation[0], equation[1], equation[2], equation[3], this.duration * 2, 1e3 / 60 / this.duration / 4));
+                } : beziers[ID] || (beziers[ID] = bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4));
             };
             JSAnimation.prototype.compute = function(from, to, delta) {
                 return (to - from) * delta + from;
@@ -784,7 +784,41 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         moofx.color = color;
         module.exports = moofx;
     },
-    "moofx@3.0.0-40/lib/color": function(require, module, exports, global) {
+    "1": function(require, module, exports, global) {
+        module.exports = function(x1, y1, x2, y2, epsilon) {
+            var curveX = function(t) {
+                var v = 1 - t;
+                return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
+            }, curveY = function(t) {
+                var v = 1 - t;
+                return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
+            }, derivativeCurveX = function(t) {
+                var v = 1 - t;
+                return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (-t * t * t + 2 * v * t) * x2;
+            };
+            return function(t) {
+                var x = t, t0, t1, t2, x2, d2, i;
+                for (t2 = x, i = 0; i < 8; i++) {
+                    x2 = curveX(t2) - x;
+                    if (Math.abs(x2) < epsilon) return curveY(t2);
+                    d2 = derivativeCurveX(t2);
+                    if (Math.abs(d2) < 1e-6) break;
+                    t2 -= x2 / d2;
+                }
+                t0 = 0, t1 = 1, t2 = x;
+                if (t2 < t0) return curveY(t0);
+                if (t2 > t1) return curveY(t1);
+                while (t0 < t1) {
+                    x2 = curveX(t2);
+                    if (Math.abs(x2 - x) < epsilon) return curveY(t2);
+                    x > x2 ? t0 = t2 : t1 = t2;
+                    t2 = (t1 - t0) * .5 + t0;
+                }
+                return curveY(t2);
+            };
+        };
+    },
+    "2": function(require, module, exports, global) {
         var HEXtoRGB, HSLtoRGB, HUEtoRGB, RGBtoRGB, colors;
         colors = {
             maroon: "#800000",
@@ -867,7 +901,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return "rgb" + (input.length > 3 ? "a" : "") + "(" + input + ")";
         };
     },
-    "moofx@3.0.0-40/lib/frame": function(require, module, exports, global) {
+    "3": function(require, module, exports, global) {
         var callbacks, iterator, requestAnimationFrame, running;
         callbacks = [];
         running = !1;
@@ -879,10 +913,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             while (i) callbacks.splice(--i, 1)[0](time);
             return null;
         };
-        typeof window != "undefined" && (requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame);
-        requestAnimationFrame || (requestAnimationFrame = function(callback) {
+        requestAnimationFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
             return setTimeout(callback, 1e3 / 60);
-        });
+        };
         module.exports = {
             request: function(callback) {
                 callbacks.push(callback);
@@ -900,31 +933,6 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 }
                 return this;
             }
-        };
-    },
-    "cubic-bezier@0.0.3/index": function(require, module, exports, global) {
-        module.exports = function(x1, y1, x2, y2, n, epsilon) {
-            var xs = [ 0 ], ys = [ 0 ], x = 0;
-            epsilon || (epsilon = 10 / n);
-            for (var i = 1; i < n - 1; i++) {
-                var u = 1 / n * i, v = 1 - u, a = v * v * 3 * u, b = u * u * 3 * v, c = u * u * u, _x = x1 * a + x2 * b + c, _y = y1 * a + y2 * b + c;
-                if (_x - x > epsilon) {
-                    x = _x;
-                    xs.push(_x);
-                    ys.push(_y);
-                }
-            }
-            xs.push(1);
-            ys.push(1);
-            return function(t) {
-                var left = 0, right = xs.length - 1;
-                while (left <= right) {
-                    var middle = Math.floor((left + right) / 2);
-                    if (xs[middle] == t) break;
-                    xs[middle] > t ? right = middle - 1 : left = middle + 1;
-                }
-                return ys[middle];
-            };
         };
     }
 });
