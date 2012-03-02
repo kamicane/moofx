@@ -12,7 +12,7 @@ moofx3 is a css3-enabled javascript animation library on caffeine. :~)
  - framework agnostic, is easily pluggable in your favorite js framework.
  - cross browser (not sure exactly which browsers just yet).
  - small footprint (15k compressed, 5k gzipped).
- - animation state is managed internally. no more checks.
+ - animation state is managed internally. no checks needed.
 
 ## API
 
@@ -146,11 +146,11 @@ Then just get busy with your dollars.
 you can build moofx (+dependency) from source with [wrapup](https://github.com/kamicane/wrapup)
 
 ```
-npm install -g wrapup
+npm install wrapup -g
 mkdir webdev
 cd webdev
 npm install moofx
-wrup -r moofx -g yes -w no -o moofx.js
-wrup -r moofx -g yes -w no -c -o moofx-min.js
+wrup -p moofx -o moofx.js
+wrup -p moofx -o moofx-min.js -c
 wrup --help
 ```
