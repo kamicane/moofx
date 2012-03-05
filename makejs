@@ -36,7 +36,7 @@ if (a2 == '--watch' || a2 == '-w'){
 
 	console.log("  watching...\n")
 
-	var scripts = ['./lib/index.js', './lib/color.js', './lib/frame.js']
+	var scripts = ['./lib/main.js', './lib/color.js', './lib/frame.js', './lib/browser.js']
 
 	scripts.forEach(function(script){
 		var filedata = fs.readFileSync(script, "utf-8")
