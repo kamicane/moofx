@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.3
+version: 3.0.4
 description: A CSS3-enabled javascript animation library on caffeine
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -327,7 +327,11 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return string((match = computedStyle(this)(filterName).match(matchOp)) ? match[1] / 100 : 1);
             };
         }
-        var transformName;
+        var transitionName;
+        each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
+            html.style[transition] != null && (transitionName = transition);
+        });
+        var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd", transformName;
         each([ "MozTransform", "WebkitTransform", "OTransform", "msTransform", "transform" ], function(transform) {
             html.style[transform] != null && (transformName = transform);
         });
@@ -348,11 +352,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return "none";
             };
         }
-        var transitionName;
-        each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
-            html.style[transition] != null && (transitionName = transition);
-        });
-        var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd", equations = {
+        var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
             linear: "cubic-bezier(0, 0, 1, 1)",
             "ease-in": "cubic-bezier(0.42, 0, 1.0, 1.0)",
