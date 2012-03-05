@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.2-8
+version: 3.0.3
 description: A CSS3-enabled javascript animation library on caffeine
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
