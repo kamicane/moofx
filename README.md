@@ -124,7 +124,7 @@ MooTools integration:
 ```javascript
 Element.implement('animate', function(){
 	var moo = moofx(this);
-	moo.apply(moo, arguments);
+	moo.animate.apply(moo, arguments);
 	return this;
 });
 ```
@@ -134,7 +134,7 @@ jQuery integration:
 ```javascript
 jQuery.fn.animate = function(){
 	var moo = moofx(this.get());
-	moo.apply(moo, arguments);
+	moo.animate.apply(moo, arguments);
 	return this;
 });
 ```
