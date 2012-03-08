@@ -480,6 +480,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 if (fromN[0].length !== toN[0].length || (p === parseShadow || p === parse) && fromN[1] !== toN[1]) {
                     this.set(to);
                     requestFrame(this.callback);
+                    return null;
                 }
                 this.from = fromN[0];
                 this.to = toN[0];
@@ -597,7 +598,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             animations: {},
             retrieve: function(node, property) {
                 var _base, _uid, uid = (_uid = node["µid"]) != null ? _uid : node["µid"] = (this.uid++).toString(36), animation = (_base = this.animations)[uid] || (_base[uid] = {});
-                return animation[property] || (animation[property] = transitionName ? new JSAnimation(node, property) : new JSAnimation(node, property));
+                return animation[property] || (animation[property] = transitionName ? new CSSAnimation(node, property) : new JSAnimation(node, property));
             },
             starts: function(nodes, styles, options) {
                 if (options == null) options = {};
