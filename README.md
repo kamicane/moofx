@@ -5,14 +5,14 @@ moofx3 is a css3-enabled javascript animation library on caffeine. :~)
 ## features
 
  - uses css3 transitions whenever available, falls back to normal javascript animation otherwise.
- - supports animating lengths to different types of units, such as `em`, `px`, `pt`, `%`.
+ - supports animating between different types of units, such as `em` to `px`, `px` to `%`, etc.
  - supports hsl colors for color-based properties.
  - supports transform animations in webkit browsers, firefox and ie9+.
- - also contains a very useful computedStyle normalizer.
+ - includes a computedStyle normalizer.
  - framework agnostic, is easily pluggable in your favorite js framework.
  - cross browser (not sure exactly which browsers just yet).
  - small footprint (15k compressed, 5k gzipped).
- - animation state is managed internally. no checks needed.
+ - simple api
 
 ## API
 
@@ -20,7 +20,7 @@ Every property in moofx can either be provided camelized (`backgroundColor`) or 
 Colors can be provided as rbg (`rgb(20,30,40)`), rbga (`rbga(20,30,40,0.5)`), hsl (`hsl(20,30,40)`), hsla (`hsla(20,30,40,0.5)`) hex (`#fa0`, `#ffaa00`), or hexa (`#ffaa00ff`, `#fa0f`).
 Lengths will always be retrieved in pixels, unless they have a value of `auto`, and you are able to animate *from to whatever length unit to whatever length unit*.
 
-moofx3 can animate the following properties: `backgroundColor`, `color`, `backgroundSize`, `fontSize`, `height`, `width`, `marginTop`, `paddingTop`, `borderTopWidth`, `top`, `borderTopColor`, `borderTopStyle`, `marginRight`, `paddingRight`, `borderRightWidth`, `right`, `borderRightColor`, `borderRightStyle`, `marginBottom`, `paddingBottom`, `borderBottomWidth`, `bottom`, `borderBottomColor`, `borderBottomStyle`, `marginLeft`, `paddingLeft`, `borderLeftWidth`, `left`, `borderLeftColor`, `borderLeftStyle`, `borderTopLeftRadius`, `borderTopRightRadius`, `borderBottomRightRadius`, `borderBottomLeftRadius`, `zIndex`, `margin`, `padding`, `borderRadius`, `borderWidth`, `borderColor`, `borderTop`, `borderRight`, `borderBottom`, `borderLeft`, `border`, `opacity`, and finally `transform`.
+moofx3 can animate the following properties: `backgroundColor`, `color`, `backgroundSize`, `fontSize`, `height`, `width`, `marginTop`, `paddingTop`, `borderTopWidth`, `top`, `borderTopColor`, `borderTopStyle`, `marginRight`, `paddingRight`, `borderRightWidth`, `right`, `borderRightColor`, `borderRightStyle`, `marginBottom`, `paddingBottom`, `borderBottomWidth`, `bottom`, `borderBottomColor`, `borderBottomStyle`, `marginLeft`, `paddingLeft`, `borderLeftWidth`, `left`, `borderLeftColor`, `borderLeftStyle`, `borderTopLeftRadius`, `borderTopRightRadius`, `borderBottomRightRadius`, `borderBottomLeftRadius`, `zIndex`, `margin`, `padding`, `borderRadius`, `borderWidth`, `borderColor`, `borderTop`, `borderRight`, `borderBottom`, `borderLeft`, `border`, `opacity`, `boxShadow`, `textShadow` and `transform`.
 
 ### moofx
 
