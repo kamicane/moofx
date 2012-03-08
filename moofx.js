@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.5
+version: 3.0.5-dev
 description: A CSS3-enabled javascript animation library on caffeine
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -24,7 +24,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
     window.moofx = require("0");
 })({
     "0": function(require, module, exports, global) {
-        var color = require("1"), frame = require("2"), moofx = typeof document != "undefined" ? require("3") : {};
+        var color = require("1"), frame = require("2");
+        var moofx = typeof document !== "undefined" ? require("3") : {};
         moofx.requestFrame = frame.request;
         moofx.cancelFrame = frame.cancel;
         moofx.color = color;
@@ -49,37 +50,48 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             black: "#000000",
             silver: "#c0c0c0",
             gray: "#808080"
-        }, RGBtoRGB = function(r, g, b, a) {
-            a == null && (a = 1);
+        };
+        var RGBtoRGB = function(r, g, b, a) {
+            if (a == null) a = 1;
             r = parseInt(r, 10);
             g = parseInt(g, 10);
             b = parseInt(b, 10);
             a = parseFloat(a);
-            return r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0 ? [ Math.round(r), Math.round(g), Math.round(b), a ] : null;
-        }, HEXtoRGB = function(hex) {
-            hex.length === 3 && (hex += "f");
+            if (!(r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0)) return null;
+            return [ Math.round(r), Math.round(g), Math.round(b), a ];
+        };
+        var HEXtoRGB = function(hex) {
+            if (hex.length === 3) hex += "f";
             if (hex.length === 4) {
                 var h0 = hex.charAt(0), h1 = hex.charAt(1), h2 = hex.charAt(2), h3 = hex.charAt(3);
                 hex = h0 + h0 + h1 + h1 + h2 + h2 + h3 + h3;
             }
-            hex.length === 6 && (hex += "ff");
+            if (hex.length === 6) hex += "ff";
             var rgb = [];
             for (var i = 0, l = hex.length; i <= l; i += 2) rgb.push(parseInt(hex.substr(i, 2), 16) / (i === 6 ? 255 : 1));
             return rgb;
-        }, HUEtoRGB = function(p, q, t) {
-            t < 0 && (t += 1);
-            t > 1 && (t -= 1);
-            return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-        }, HSLtoRGB = function(h, s, l, a) {
+        };
+        var HUEtoRGB = function(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        var HSLtoRGB = function(h, s, l, a) {
             var r, b, g;
-            a == null && (a = 1);
+            if (a == null) a = 1;
             h /= 360;
             s /= 100;
             l /= 100;
             a /= 1;
             if (h > 1 || h < 0 || s > 1 || s < 0 || l > 1 || l < 0 || a > 1 || a < 0) return null;
-            if (s === 0) r = b = g = l; else {
-                var q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+            if (s === 0) {
+                r = b = g = l;
+            } else {
+                var q = l < .5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
                 r = HUEtoRGB(p, q, h + 1 / 3);
                 g = HUEtoRGB(p, q, h);
                 b = HUEtoRGB(p, q, h - 1 / 3);
@@ -88,34 +100,36 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         module.exports = function(input, array) {
             var match;
-            if (typeof input != "string") return null;
+            if (typeof input !== "string") return null;
             input = colors[input = input.replace(/\s+/g, "")] || input;
-            if (input.match(/^#[a-f0-9]{3,8}/)) input = HEXtoRGB(input.replace("#", "")); else {
-                if (!(match = input.match(/([\d.])+/g))) return null;
-                if (input.match(/^rgb/)) input = match; else {
-                    if (!input.match(/^hsl/)) return null;
-                    input = HSLtoRGB.apply(null, match);
-                }
+            if (input.match(/^#[a-f0-9]{3,8}/)) {
+                input = HEXtoRGB(input.replace("#", ""));
+            } else if (match = input.match(/([\d.])+/g)) {
+                if (input.match(/^rgb/)) input = match; else if (input.match(/^hsl/)) input = HSLtoRGB.apply(null, match); else return null;
+            } else {
+                return null;
             }
-            if (!input || !(input = RGBtoRGB.apply(null, input))) return null;
+            if (!(input && (input = RGBtoRGB.apply(null, input)))) return null;
             if (array) return input;
-            input[3] === 1 && input.splice(3, 1);
+            if (input[3] === 1) input.splice(3, 1);
             return "rgb" + (input.length > 3 ? "a" : "") + "(" + input + ")";
         };
     },
     "2": function(require, module, exports, global) {
-        var callbacks = [], running = !1, iterator = function(time) {
-            time == null && (time = +(new Date));
-            running = !1;
+        var callbacks = [], running = false;
+        var iterator = function(time) {
+            if (time == null) time = +(new Date);
+            running = false;
             var i = callbacks.length;
             while (i) callbacks.splice(--i, 1)[0](time);
-        }, requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
+        };
+        var requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
             return setTimeout(callback, 1e3 / 60);
         };
         exports.request = function(callback) {
             callbacks.push(callback);
             if (!running) {
-                running = !0;
+                running = true;
                 requestFrame(iterator);
             }
             return this;
@@ -123,46 +137,52 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         exports.cancel = function(match) {
             for (var i = 0, l = callbacks.length; i < l; i++) {
                 var callback = callbacks[i];
-                callback === match && callbacks.splice(i, 1);
+                if (callback === match) callbacks.splice(i, 1);
             }
             return this;
         };
     },
     "3": function(require, module, exports, global) {
-        var bezier = require("4"), color = require("1"), frame = require("2"), inherits = function(parent, child) {
+        var bezier = require("4"), color = require("1"), frame = require("2");
+        var inherits = function(parent, child) {
             var C = function() {
                 this.constructor = parent;
             };
-            C.prototype = parent.prototype;
+            var proto = C.prototype = parent.prototype;
             child.prototype = new C;
+            child.prototype.parent = proto;
             return child;
-        }, cancelFrame = frame.cancel, requestFrame = frame.request, string = String, number = parseFloat, camelize = function(self) {
+        };
+        var cancelFrame = frame.cancel, requestFrame = frame.request;
+        var string = String, number = parseFloat;
+        var camelize = function(self) {
             return self.replace(/-\D/g, function(match) {
                 return match.charAt(1).toUpperCase();
             });
-        }, hyphenate = function(self) {
+        };
+        var hyphenate = function(self) {
             return self.replace(/[A-Z]/g, function(match) {
                 return "-" + match.charAt(0).toLowerCase();
             });
-        }, clean = function(self) {
-            return string(self).replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-        }, map = Array.map || Array.prototype.map ? function(array, fn, context) {
+        };
+        var clean = function(self) {
+            return string(self).replace(whiteRe, " ").replace(/^\s+|\s+$/g, "");
+        };
+        var map = Array.map || Array.prototype.map ? function(array, fn, context) {
             return Array.prototype.map.call(array, fn, context);
         } : function(array, fn, context) {
             var result = [];
             for (var i = 0, l = array.length; i < l; i++) result.push(fn.call(context, array[i], i, array));
             return result;
-        }, each = Array.prototype.forEach ? function(array, fn, context) {
+        };
+        var each = Array.prototype.forEach ? function(array, fn, context) {
             Array.prototype.forEach.call(array, fn, context);
             return array;
         } : function(array, fn, context) {
             for (var i = 0, l = array.length; i < l; i++) fn.call(context, array[i], i, array);
             return array;
-        }, mirror4 = function(values) {
-            var length = values.length;
-            length === 1 ? values.push(values[0], values[0], values[0]) : length === 2 ? values.push(values[0], values[1]) : length === 3 && values.push(values[1]);
-            return values;
-        }, computedStyle = global.getComputedStyle ? function(node) {
+        };
+        var compute = global.getComputedStyle ? function(node) {
             var cts = getComputedStyle(node);
             return function(property) {
                 return cts ? cts.getPropertyValue(hyphenate(property)) : "";
@@ -172,87 +192,10 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return function(property) {
                 return cts ? cts[camelize(property)] : "";
             };
-        }, Parser = function() {};
-        Parser.prototype.extract = function() {
-            return [ this ];
         };
-        Parser.prototype.toString = function() {
-            return string(this.value);
-        };
-        var StringParser = inherits(Parser, function(value) {
-            value == null && (value = "");
-            this.value = string(value);
-        }), NumberParser = inherits(Parser, function(value) {
-            value == null && (value = "");
-            var n = number(value);
-            this.value = isFinite(n) ? n : value;
-        }), Parsers = function() {};
-        Parsers.prototype.extract = function() {
-            return this.parsed;
-        };
-        Parsers.prototype.toString = function(normalize, node) {
-            return clean(map(this.parsed, function(parsed) {
-                return parsed.toString(normalize, node);
-            }, this).join(" "));
-        };
-        var LengthParser = inherits(Parser, function(value) {
-            var match;
-            value == null && (value = "");
-            if (value === "auto") this.value = "auto"; else if (match = clean(string(value)).match(/^([-\d.]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)?$/)) {
-                this.value = number(match[1]);
-                this.unit = this.value === 0 || !match[2] ? "px" : match[2];
-            } else this.value = "";
-        });
-        LengthParser.prototype.toString = function(normalize, node) {
-            return this.value === "auto" ? this.value : this.value === "" ? normalize ? "0px" : "" : node && this.unit !== "px" ? "" + pixelRatio(node, this.unit) * this.value + "px" : this.value + this.unit;
-        };
-        var ColorParser = inherits(Parser, function(value) {
-            value === "transparent" && (value = "#00000000");
-            this.value = value ? color(value, !0) : "";
-        });
-        ColorParser.prototype.toString = function(normalize) {
-            return this.value ? !!normalize || this.value !== "transparent" && this.value[3] !== 0 ? normalize || this.value[3] !== 1 ? "rgba(" + this.value + ")" : "rgb(" + this.value[0] + "," + this.value[1] + "," + this.value[2] + ")" : "transparent" : normalize ? "rgba(0,0,0,1)" : "";
-        };
-        var LengthsParser = inherits(Parsers, function(value) {
-            value == null && (value = "");
-            this.parsed = map(mirror4(clean(value).split(" ")), function(v) {
-                return new LengthParser(v);
-            });
-        }), BorderStyleParser = inherits(Parser, function(value) {
-            value == null && (value = "");
-            var match = (value = clean(value)).match(/none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/);
-            this.value = match ? value : "";
-        });
-        BorderStyleParser.prototype.toString = function(normalize) {
-            return normalize && !this.value ? "none" : this.value;
-        };
-        var BorderParser = inherits(Parsers, function(value) {
-            value == null ? value = "" : value === "none" && (value = "0 none #000");
-            var match = value = clean(value).match(/((?:[\d.]+)(?:[\w%]+)?)\s(\w+)\s(rgb(?:a)?\([\d,\s]+\)|hsl(?:a)?\([\d,\s]+\)|#[a-f0-9]+|\w+)/) || [], matchedWidth = match[1], matchedStyle = match[2], matchedColor = match[3];
-            this.parsed = [ new LengthParser(matchedWidth != null ? matchedWidth : ""), new BorderStyleParser(matchedStyle != null ? matchedStyle : ""), new ColorParser(matchedColor != null ? matchedColor : "") ];
-        }), BorderColorParser = inherits(Parsers, function(colors) {
-            colors == null && (colors = "");
-            colors = mirror4(colors.match(/rgb(a)?\([\d,\s]+\)|hsl(a)?\([\d,\s]+\)|#[a-f0-9]+|\w+/g) || [ "" ]);
-            this.parsed = map(colors, function(c) {
-                return new ColorParser(c);
-            });
-        }), ZIndexParser = inherits(Parser, function(value) {
-            this.value = value === "auto" ? value : number(value);
-        }), parsers = {}, getters = {}, setters = {}, translations = {}, html = document.documentElement, get = function(key) {
-            return getters[key] || (getters[key] = function() {
-                var parser = parsers[key] || StringParser;
-                return function() {
-                    return (new parser(computedStyle(this)(key))).toString(!0, this);
-                };
-            }());
-        }, set = function(key) {
-            return setters[key] || (setters[key] = function() {
-                var parser = parsers[key] || StringParser;
-                return function(value) {
-                    return this.style[key] = (new parser(value)).toString();
-                };
-            }());
-        }, test = document.createElement("div"), cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;", pixelRatio = function(element, u) {
+        var test = document.createElement("div");
+        var cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;";
+        var pixelRatio = function(element, u) {
             var parent = element.parentNode, ratio = 1;
             if (parent) {
                 test.style.cssText = cssText + ("width:100" + u + ";");
@@ -261,97 +204,182 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 parent.removeChild(test);
             }
             return ratio;
-        }, trbl = [ "Top", "Right", "Bottom", "Left" ], tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
-        parsers.color = parsers.backgroundColor = ColorParser;
-        parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = LengthParser;
+        };
+        var mirror4 = function(values) {
+            var length = values.length;
+            if (length === 1) values.push(values[0], values[0], values[0]); else if (length === 2) values.push(values[0], values[1]); else if (length === 3) values.push(values[1]);
+            return values;
+        };
+        var colorRe = /(rgb[a]?\([-.\d,\s]+\))|(hsl[a]?\([-.\d,\s]+\))|(#[a-f0-9]{3,8})|(maroon|red|orange|yellow|olive|purple|fuchsia|white|lime|green|navy|blue|aqua|teal|black|silver|gray|transparent)/g, lengthRe = /([-.\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)/g, rLengthRe = /([-.\d]+)([\w%]+)?/, rLengthReG = /([-.\d]+)([\w%]+)?/g, borderStyleRe = /none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/, cubicBezierRe = /cubic-bezier\(([-.\d]+),([-.\d]+),([-.\d]+),([-.\d]+)\)/, cubicBezierReG = /cubic-bezier\(([-.\d,]+)\)/g, durationRe = /([\d.]+)(s|ms)?/, whiteRe = /\s+/g;
+        var parseString = function(value) {
+            return value == null ? "" : value;
+        };
+        var parseOpacity = function(value, normalize) {
+            console.log(value);
+            if (value == null || value === "") return normalize ? 1 : "";
+            return string(number(value));
+        };
+        var parseColor = function(value, normalize) {
+            if (value == null || value === "") return normalize ? "rgba(0,0,0,1)" : "";
+            if (value == "transparent") return normalize ? "rgba(0,0,0,0)" : value;
+            var c = color(value, normalize) || color("#000", normalize);
+            return normalize ? "rgba(" + c + ")" : c;
+        };
+        var parseLength = function(value, normalize, node) {
+            if (value == null || value === "") return normalize ? "0px" : "";
+            var match = string(value).match(rLengthRe);
+            if (!match) return value;
+            var value = number(match[1]), unit = match[2] || "px";
+            if (value == 0) return value + unit;
+            return node && unit !== "px" ? pixelRatio(node, unit) * value + "px" : value + unit;
+        };
+        var parseBorderStyle = function(value, normalize) {
+            if (value == null || value === "") return normalize ? "none" : "";
+            var match = (value = clean(value)).match(borderStyleRe);
+            return match ? value : "";
+        };
+        var parseBorder = function(value, normalize, node) {
+            var normalized = "0px none rgba(0,0,0,1)";
+            if (value == null || value === "") return normalize ? normalized : "";
+            if (value == 0 || value === "none") return normalize ? normalized : value;
+            var c;
+            value = value.replace(colorRe, function(match) {
+                c = match;
+                return "";
+            });
+            var s = value.match(borderStyleRe) || [ "none" ], l = value.match(rLengthRe) || [ "0" ];
+            return [ parseLength(l[0], normalize, node), s[0], parseColor(c, normalize) ].join(" ");
+        };
+        var parseShort4 = function(value, normalize, node) {
+            return mirror4(map(clean(value).split(" "), function(v) {
+                return parseLength(v, normalize, node);
+            })).join(" ");
+        };
+        var parseShadow = function(value, normalize, node) {
+            var normalized = "0px 0px 0px 0px rgba(0,0,0,0)";
+            if (value == null || value === "") return normalize ? normalized : "";
+            if (value === "none") return normalize ? normalized : value;
+            var colors = [], value = clean(value).replace(colorRe, function(match) {
+                colors.push(match);
+                return "";
+            });
+            return map(value.split(","), function(shadow, i) {
+                var c = parseColor(colors[i], normalize), inset = /inset/.test(shadow), lengths = shadow.match(rLengthReG) || [ "0px" ];
+                lengths = map(lengths, function(m) {
+                    return parseLength(m, normalize, node);
+                });
+                while (lengths.length < 4) lengths.push("0px");
+                var ret = inset ? [ "inset", c ] : [ c ];
+                return ret.concat(lengths).join(" ");
+            }).join(", ");
+        };
+        var parse = function(value, normalize, node) {
+            if (value == null || value === "") return "";
+            return value.replace(colorRe, function(match) {
+                return parseColor(match, normalize);
+            }).replace(lengthRe, function(match) {
+                return parseLength(match, normalize, node);
+            });
+        };
+        var getters = {}, setters = {}, parsers = {}, aliases = {};
+        var getter = function(key) {
+            return getters[key] || (getters[key] = function() {
+                var alias = aliases[key] || key, parser = parsers[key] || parse;
+                return function() {
+                    return parser(compute(this)(alias), true, this);
+                };
+            }());
+        };
+        var setter = function(key) {
+            return setters[key] || (setters[key] = function() {
+                var alias = aliases[key] || key, parser = parsers[key] || parse;
+                return function(value) {
+                    this.style[alias] = parser(value);
+                };
+            }());
+        };
+        var trbl = [ "Top", "Right", "Bottom", "Left" ], tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
         each(trbl, function(d) {
             var bd = "border" + d;
             each([ "margin" + d, "padding" + d, bd + "Width", d.toLowerCase() ], function(n) {
-                parsers[n] = LengthParser;
+                parsers[n] = parseLength;
             });
-            parsers[bd + "Color"] = ColorParser;
-            parsers[bd + "Style"] = BorderStyleParser;
-            parsers[bd] = BorderParser;
+            parsers[bd + "Color"] = parseColor;
+            parsers[bd + "Style"] = parseBorderStyle;
+            parsers[bd] = parseBorder;
             getters[bd] = function() {
-                return [ get(bd + "Width").call(this), get(bd + "Style").call(this), get(bd + "Color").call(this) ].join(" ");
+                return [ getter(bd + "Width").call(this), getter(bd + "Style").call(this), getter(bd + "Color").call(this) ].join(" ");
             };
         });
         each(tlbl, function(d) {
-            parsers["border" + d + "Radius"] = LengthParser;
+            parsers["border" + d + "Radius"] = parseLength;
         });
-        parsers.zIndex = ZIndexParser;
+        parsers.color = parsers.backgroundColor = parseColor;
+        parsers.width = parsers.height = parsers.fontSize = parsers.backgroundSize = parseLength;
         each([ "margin", "padding" ], function(name) {
-            parsers[name] = LengthsParser;
-            return getters[name] = function() {
+            parsers[name] = parseShort4;
+            getters[name] = function() {
                 return map(trbl, function(d) {
-                    return get(name + d).call(this);
+                    return getter(name + d).call(this);
                 }, this).join(" ");
             };
         });
-        parsers.borderRadius = LengthsParser;
-        getters.borderRadius = function() {
-            return map(trbl, function(d) {
-                return get("border" + d + "Radius").call(this);
-            }).join(" ");
+        parsers.borderWidth = parseShort4;
+        parsers.borderStyle = function(value, normalize, node) {
+            return mirror4(map(clean(value).split(" "), parseBorderStyle)).join(" ");
         };
-        parsers.borderWidth = LengthsParser;
-        parsers.borderColor = BorderColorParser;
-        each([ "Width", "Style", "Color" ], function(t) {
-            getters["border" + t] = function() {
+        parsers.borderColor = function(value, normalize) {
+            return mirror4(parse(value, normalize).split(" ")).join(" ");
+        };
+        each([ "Width", "Style", "Color" ], function(name) {
+            getters["border" + name] = function() {
                 return map(trbl, function(d) {
-                    return get("border" + d + t).call(this);
+                    return getter("border" + d + name).call(this);
                 }, this).join(" ");
             };
         });
-        parsers.border = BorderParser;
+        parsers.borderRadius = parseShort4;
+        getters.borderRadius = function() {
+            return map(tlbl, function(d) {
+                return getter("border" + d + "Radius").call(this);
+            }, this).join(" ");
+        };
+        parsers.border = parseBorder;
         getters.border = function() {
             var pvalue;
             for (var i = 0; i < trbl.length; i++) {
-                var value = get("border" + trbl[i]).call(this);
+                var value = getter("border" + trbl[i]).call(this);
                 if (pvalue && value !== pvalue) return null;
                 pvalue = value;
             }
             return value;
         };
+        parsers.zIndex = parseString;
+        var html = document.documentElement;
         var filterName = html.style.MsFilter != null ? "MsFilter" : html.style.filter != null ? "filter" : null;
-        parsers.opacity = NumberParser;
+        parsers.opacity = parseOpacity;
         if (filterName && html.style.opacity == null) {
             matchOp = /alpha\(opacity=([\d.]+)\)/i;
             setters.opacity = function(value) {
                 value = (value = number(value) === 1) ? "" : "alpha(opacity=" + value * 100 + ")";
-                var filter = computedStyle(this)(filterName);
+                var filter = compute(this)(filterName);
                 return this.style[filterName] = matchOp.test(filter) ? filter.replace(matchOp, value) : filter + value;
             };
             getters.opacity = function() {
-                var match;
-                return string((match = computedStyle(this)(filterName).match(matchOp)) ? match[1] / 100 : 1);
+                var match = compute(this)(filterName).match(matchOp);
+                return string(!match ? 1 : match[1] / 100);
             };
         }
+        parsers.boxShadow = parsers.textShadow = parseShadow;
         var transitionName;
         each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
-            html.style[transition] != null && (transitionName = transition);
+            if (html.style[transition] != null) transitionName = transition;
         });
-        var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd", transformName;
+        aliases.transition = transitionName;
+        var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd";
         each([ "MozTransform", "WebkitTransform", "OTransform", "msTransform", "transform" ], function(transform) {
-            html.style[transform] != null && (transformName = transform);
+            if (html.style[transform] != null) aliases.transform = transform;
         });
-        parsers.transform = transitionName ? StringParser : inherits(Parser, function() {
-            return "none";
-        });
-        if (transformName) {
-            translations.transform = transformName;
-            setters.transform = function(value) {
-                return this.style[transformName] = value;
-            };
-            getters.transform = function() {
-                return computedStyle(this)(transformName);
-            };
-        } else {
-            setters.transform = function() {};
-            getters.transform = function() {
-                return "none";
-            };
-        }
         var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
             linear: "cubic-bezier(0, 0, 1, 1)",
@@ -361,23 +389,51 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         equations.ease = equations["default"];
         var BrowserAnimation = function(node, property) {
+            var _getter = getter(property), _setter = setter(property);
+            this.get = function() {
+                return _getter.call(node);
+            };
+            this.set = function(value) {
+                return _setter.call(node, value);
+            };
             this.node = node;
             this.property = property;
-            this.setter = set(property);
-            this.getter = get(property);
+            this.parse = parsers[property] || parse;
         };
         BrowserAnimation.prototype.setOptions = function(options) {
-            options == null && (options = {});
+            if (options == null) options = {};
             var duration = options.duration;
-            typeof duration == "number" && (duration += "ms");
             if (!(this.duration = this.parseDuration(duration || "500ms"))) throw new Error(this.duration + " is not a valid duration");
             if (!(this.equation = this.parseEquation(options.equation || "default"))) throw new Error(this.equation + " is not a valid equation");
             this.callback = options.callback || function() {};
             return this;
         };
+        BrowserAnimation.prototype.prepare = function(to) {
+            if (this.duration === 0) {
+                this.set(to);
+                requestFrame(this.callback);
+                return null;
+            } else {
+                var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, true);
+                if (p === parseLength || p === parseBorder || p === parseShort4) {
+                    var toUnits = toParsed.match(lengthRe), i = 0;
+                    if (toUnits) fromParsed = fromParsed.replace(lengthRe, function(fromMatch) {
+                        var toMatch = toUnits[i++], fromValue = fromMatch.match(rLengthRe)[1], toUnit = toMatch.match(rLengthRe)[2];
+                        return toUnit !== "px" ? fromValue / pixelRatio(node, toUnit) + toUnit : fromMatch;
+                    });
+                    if (i > 0) this.set(fromParsed);
+                }
+                if (fromParsed === toParsed) {
+                    requestFrame(this.callback);
+                    return null;
+                } else {
+                    return [ fromParsed, toParsed ];
+                }
+            }
+        };
         BrowserAnimation.prototype.parseDuration = function(duration) {
-            if (duration = string(duration).match(/([\d.]+)(s|ms)/)) {
-                var time = number(duration[1]), unit = duration[2];
+            if (duration = string(duration).match(durationRe)) {
+                var time = number(duration[1]), unit = duration[2] || "ms";
                 if (unit === "s") return time * 1e3;
                 if (unit === "ms") return time;
             }
@@ -385,37 +441,39 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         BrowserAnimation.prototype.parseEquation = function(equation) {
             equation = equations[equation] || equation;
-            var match = equation.replace(/\s+/g, "").match(/^cubic-bezier\(([\d.]+),([\d.]+),([\d.]+),([\d.]+)\)$/);
+            var match = equation.replace(whiteRe, "").match(cubicBezierRe);
             return match ? map(match.slice(1), number) : null;
         };
         var JSAnimation = inherits(BrowserAnimation, function(node, property) {
-            BrowserAnimation.prototype.constructor.call(this, node, property);
+            this.parent.constructor.call(this, node, property);
             var self = this;
             this.bstep = function(t) {
                 return self.step(t);
             };
-        }), numbers = function(string) {
-            var ns = [], replaced = string.replace(/[-\d.]+/g, function(n) {
+        });
+        var numbers = function(string) {
+            var ns = [], replaced = string.replace(/[-.\d]+/g, function(n) {
                 ns.push(number(n));
                 return "@";
             });
             return [ ns, replaced ];
-        }, compute = function(from, to, delta) {
+        };
+        var calc = function(from, to, delta) {
             return (to - from) * delta + from;
         };
-        JSAnimation.prototype.start = function(from, to) {
-            if (from != to && this.duration !== 0) {
+        JSAnimation.prototype.start = function(to) {
+            var prepared = this.prepare(to), p = this.parse;
+            if (prepared) {
                 this.time = 0;
-                from = numbers(from);
-                to = numbers(to);
-                if (from[0].length !== to[0].length) throw new Error("length mismatch");
-                this.from = from[0];
-                this.to = to[0];
-                this.template = to[1];
+                var fromN = numbers(prepared[0]), toN = numbers(prepared[1]);
+                if (fromN[0].length !== toN[0].length || (p === parseShadow || p === parse) && fromN[1] !== toN[1]) {
+                    this.set(to);
+                    requestFrame(this.callback);
+                }
+                this.from = fromN[0];
+                this.to = toN[0];
+                this.template = toN[1];
                 requestFrame(this.bstep);
-            } else {
-                this.duration == 0 && this.setter.call(this.node, to);
-                requestFrame(this.callback);
             }
             return this;
         };
@@ -426,55 +484,56 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         JSAnimation.prototype.step = function(now) {
             this.time || (this.time = now);
             var factor = (now - this.time) / this.duration;
-            factor > 1 && (factor = 1);
+            if (factor > 1) factor = 1;
             var delta = this.equation(factor), tpl = this.template, from = this.from, to = this.to;
             for (var i = 0, l = from.length; i < l; i++) {
                 var f = from[i], t = to[i];
-                tpl = tpl.replace("@", t !== f ? compute(f, t, delta) : t);
+                tpl = tpl.replace("@", t !== f ? calc(f, t, delta) : t);
             }
-            this.setter.call(this.node, tpl);
-            factor !== 1 ? requestFrame(this.bstep) : this.callback(t);
+            this.set(tpl);
+            if (factor !== 1) requestFrame(this.bstep); else this.callback(now);
         };
         JSAnimation.prototype.parseEquation = function(equation) {
-            var equation = BrowserAnimation.prototype.parseEquation.call(this, equation);
-            return equation == [ 0, 0, 1, 1 ] ? function(x) {
+            var equation = this.parent.parseEquation.call(this, equation);
+            if (equation == [ 0, 0, 1, 1 ]) return function(x) {
                 return x;
-            } : bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
+            };
+            return bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
         };
         var CSSAnimation = inherits(BrowserAnimation, function(node, property) {
-            BrowserAnimation.prototype.constructor.call(this, node, property);
+            this.parent.constructor.call(this, node, property);
             var self = this;
-            this.hproperty = hyphenate(translations[this.property] || this.property);
             this.bdefer = function(t) {
                 return self.defer(t);
             };
             this.bcomplete = function(e) {
                 return self.complete(e);
             };
+            this.hproperty = hyphenate(aliases[property] || property);
         });
-        CSSAnimation.prototype.start = function(from, to) {
-            if (from != to && this.duration != 0) {
-                this.to = to;
+        CSSAnimation.prototype.start = function(to) {
+            var prepared = this.prepare(to);
+            if (prepared) {
+                this.to = prepared[1];
                 requestFrame(this.bdefer);
-            } else {
-                this.duration == 0 && this.setter.call(this.node, to);
-                requestFrame(this.callback);
             }
             return this;
         };
         CSSAnimation.prototype.stop = function(hard) {
             if (this.running) {
-                this.running = !1;
-                hard && this.setter.call(this.node, this.getter.call(this.node));
+                this.running = false;
+                if (hard) this.set(this.get());
                 this.clean();
-            } else cancelFrame(this.bdefer);
+            } else {
+                cancelFrame(this.bdefer);
+            }
             return this;
         };
         CSSAnimation.prototype.defer = function() {
-            this.running = !0;
-            this.modCSS(!0);
-            this.node.addEventListener(transitionEndName, this.bcomplete, !1);
-            this.setter.call(this.node, this.to);
+            this.running = true;
+            this.modCSS(true);
+            this.node.addEventListener(transitionEndName, this.bcomplete, false);
+            this.set(this.to);
             return null;
         };
         CSSAnimation.prototype.clean = function() {
@@ -484,9 +543,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         CSSAnimation.prototype.complete = function(e) {
             if (e && e.propertyName === this.hproperty) {
-                this.running = !1;
+                this.running = false;
                 this.clean();
-                requestFrame(this.callback);
+                this.callback(+(new Date));
             }
             return null;
         };
@@ -504,7 +563,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             }
         };
         CSSAnimation.prototype.modCSS = function(inclusive) {
-            var rules = computedStyle(this.node), p = rules(transitionName + "Property").replace(/\s+/g, "").split(","), d = rules(transitionName + "Duration").replace(/\s+/g, "").split(","), e = rules(transitionName + "TimingFunction").replace(/\s+/g, "").match(/cubic-bezier\(([\d.,]+)\)/g);
+            var rules = compute(this.node), p = rules(transitionName + "Property").replace(whiteRe, "").split(","), d = rules(transitionName + "Duration").replace(whiteRe, "").split(","), e = rules(transitionName + "TimingFunction").replace(whiteRe, "").match(cubicBezierReG);
             removeProp("all", p, d, e);
             removeProp(this.hproperty, p, d, e);
             if (inclusive) {
@@ -526,12 +585,11 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             uid: 0,
             animations: {},
             retrieve: function(node, property) {
-                var animation, _base, _uid, uid = (_uid = node["µid"]) != null ? _uid : node["µid"] = (this.uid++).toString(36);
-                animation = (_base = this.animations)[uid] || (_base[uid] = {});
-                return animation[property] || (animation[property] = transitionName ? new CSSAnimation(node, property) : new JSAnimation(node, property));
+                var _base, _uid, uid = (_uid = node["µid"]) != null ? _uid : node["µid"] = (this.uid++).toString(36), animation = (_base = this.animations)[uid] || (_base[uid] = {});
+                return animation[property] || (animation[property] = transitionName ? new JSAnimation(node, property) : new JSAnimation(node, property));
             },
             starts: function(nodes, styles, options) {
-                options == null && (options = {});
+                if (options == null) options = {};
                 var type = typeof options;
                 options = type === "function" ? {
                     callback: options
@@ -540,29 +598,13 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 } : options;
                 var callback = options.callback || function() {}, completed = 0, length = 0;
                 options.callback = function(t) {
-                    ++completed === length && callback(t);
+                    if (++completed === length) callback(t);
                 };
                 for (var property in styles) {
-                    var value = styles[property], parser = parsers[property = camelize(property)];
-                    if (!parser) throw new Error("no parser for " + property);
-                    var setter = set(property), getter = get(property);
+                    var value = styles[property], property = camelize(property);
                     for (var i = 0, l = nodes.length; i < l; i++) {
                         length++;
-                        var node = nodes[i], instance = this.retrieve(node, property), parsedFrom = new parser(getter.call(node)), parsedTo = new parser(value), fromParsers = parsedFrom.extract(), toParsers = parsedTo.extract(), enforce = !1;
-                        for (var j = 0, k = fromParsers.length; j < k; j++) {
-                            var fp = fromParsers[j], tp = toParsers[j];
-                            if ("auto" === tp.value || "auto" === fp.value) throw new Error("cannot animate " + property + " from or to `auto`");
-                            if (tp.unit && fp.unit) {
-                                enforce = !0;
-                                if (tp.unit !== "px") {
-                                    fp.value = fp.value / pixelRatio(node, tp.unit);
-                                    fp.unit = tp.unit;
-                                }
-                            }
-                        }
-                        var fs = parsedFrom.toString(!0), ts = parsedTo.toString(!0);
-                        enforce && setter.call(node, fs);
-                        instance.setOptions(options).start(fs, ts);
+                        this.retrieve(nodes[i], property).setOptions(options).start(value);
                     }
                 }
             },
@@ -573,11 +615,13 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             },
             sets: function(nodes, styles) {
                 for (var property in styles) {
-                    var value = styles[property], setter = set(property = camelize(property));
+                    var value = styles[property], set = setter(property = camelize(property));
                     for (var i = 0, l = nodes.length; i < l; i++) {
                         var node = nodes[i], aid, apid;
-                        (aid = this.animations[node["µid"]]) != null && (apid = aid[property]) != null && apid.stop(!0);
-                        setter.call(node, value);
+                        if (aid = this.animations[node["µid"]]) {
+                            if (apid = aid[property]) apid.stop(true);
+                        }
+                        set.call(node, value);
                     }
                 }
                 return this;
@@ -587,29 +631,32 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 styles[property] = value;
                 return this.sets(nodes, styles);
             }
-        }, mu = function(nod) {
+        };
+        var mu = function(nod) {
             this.valueOf = function() {
                 return nod;
             };
             return this;
         };
-        moofx = function(nod) {
-            return nod ? new mu(nod.length != null ? nod : nod.nodeType === 1 ? [ nod ] : []) : null;
+        var moofx = function(nod) {
+            if (!nod) return null;
+            return new mu(nod.length != null ? nod : nod.nodeType === 1 ? [ nod ] : []);
         };
         moofx.prototype = mu.prototype;
         moofx.prototype.animate = function(A, B, C) {
-            typeof A != "string" ? animations.starts(this.valueOf(), A, B) : animations.start(this.valueOf(), A, B, C);
+            if (typeof A !== "string") animations.starts(this.valueOf(), A, B); else animations.start(this.valueOf(), A, B, C);
             return this;
         };
         moofx.prototype.style = function(A, B) {
-            typeof A != "string" ? animations.sets(this.valueOf(), A) : animations.set(this.valueOf(), A, B);
+            if (typeof A !== "string") animations.sets(this.valueOf(), A); else animations.set(this.valueOf(), A, B);
             return this;
         };
         moofx.prototype.compute = function(A) {
-            return get(camelize(A)).call(this.valueOf()[0]);
+            return getter(camelize(A)).call(this.valueOf()[0]);
         };
         moofx.parse = function(property, value, normalize, node) {
-            return parsers[property = camelize(property)] ? (new parsers[property](value)).toString(normalize, node) : null;
+            if (!parsers[property = camelize(property)]) return null;
+            return parsers[property](value, normalize, node);
         };
         module.exports = moofx;
     },
@@ -618,10 +665,12 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             var curveX = function(t) {
                 var v = 1 - t;
                 return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
-            }, curveY = function(t) {
+            };
+            var curveY = function(t) {
                 var v = 1 - t;
                 return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
-            }, derivativeCurveX = function(t) {
+            };
+            var derivativeCurveX = function(t) {
                 var v = 1 - t;
                 return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (-t * t * t + 2 * v * t) * x2;
             };
@@ -632,7 +681,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                     if (Math.abs(x2) < epsilon) return curveY(t2);
                     d2 = derivativeCurveX(t2);
                     if (Math.abs(d2) < 1e-6) break;
-                    t2 -= x2 / d2;
+                    t2 = t2 - x2 / d2;
                 }
                 t0 = 0, t1 = 1, t2 = x;
                 if (t2 < t0) return curveY(t0);
@@ -640,7 +689,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 while (t0 < t1) {
                     x2 = curveX(t2);
                     if (Math.abs(x2 - x) < epsilon) return curveY(t2);
-                    x > x2 ? t0 = t2 : t1 = t2;
+                    if (x > x2) t0 = t2; else t1 = t2;
                     t2 = (t1 - t0) * .5 + t0;
                 }
                 return curveY(t2);
