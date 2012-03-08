@@ -215,15 +215,19 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return value == null ? "" : value;
         };
         var parseOpacity = function(value, normalize) {
-            console.log(value);
-            if (value == null || value === "") return normalize ? 1 : "";
-            return string(number(value));
+            if (value == null || value === "") return normalize ? "1" : "";
+            var n = number(value);
+            return isFinite(n) ? string(n) : "1";
         };
+        test.style.color = "rgba(0,0,0,0.5)";
+        var rgba = /^rgba/.test(test.style.color);
         var parseColor = function(value, normalize) {
             if (value == null || value === "") return normalize ? "rgba(0,0,0,1)" : "";
             if (value == "transparent") return normalize ? "rgba(0,0,0,0)" : value;
-            var c = color(value, normalize) || color("#000", normalize);
-            return normalize ? "rgba(" + c + ")" : c;
+            var c = color(value, true);
+            if (!c) return normalize ? "rgba(0,0,0,1)" : "";
+            if (c[3] === 0 && !rgba) return "transparent";
+            return !normalize && (!rgba || c[3] === 1) ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")";
         };
         var parseLength = function(value, normalize, node) {
             if (value == null || value === "") return normalize ? "0px" : "";
@@ -235,8 +239,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         var parseBorderStyle = function(value, normalize) {
             if (value == null || value === "") return normalize ? "none" : "";
-            var match = (value = clean(value)).match(borderStyleRe);
-            return match ? value : "";
+            var match = value.match(borderStyleRe);
+            return match ? value : normalize ? "none" : "";
         };
         var parseBorder = function(value, normalize, node) {
             var normalized = "0px none rgba(0,0,0,1)";
@@ -247,13 +251,14 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 c = match;
                 return "";
             });
-            var s = value.match(borderStyleRe) || [ "none" ], l = value.match(rLengthRe) || [ "0" ];
-            return [ parseLength(l[0], normalize, node), s[0], parseColor(c, normalize) ].join(" ");
+            var s = value.match(borderStyleRe), l = value.match(rLengthRe);
+            return clean([ parseLength(l ? l[0] : "", normalize, node), parseBorderStyle(s ? s[0] : "", normalize), parseColor(c, normalize) ].join(" "));
         };
         var parseShort4 = function(value, normalize, node) {
-            return mirror4(map(clean(value).split(" "), function(v) {
+            if (value == null || value === "") return normalize ? "0px 0px 0px 0px" : "";
+            return clean(mirror4(map(clean(value).split(" "), function(v) {
                 return parseLength(v, normalize, node);
-            })).join(" ");
+            })).join(" "));
         };
         var parseShadow = function(value, normalize, node) {
             var normalized = "0px 0px 0px 0px rgba(0,0,0,0)";
@@ -326,10 +331,17 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         });
         parsers.borderWidth = parseShort4;
         parsers.borderStyle = function(value, normalize, node) {
-            return mirror4(map(clean(value).split(" "), parseBorderStyle)).join(" ");
+            value = clean(value).split(" ");
+            return clean(mirror4(map(value, function(v) {
+                parseBorderStyle(v, normalize);
+            })).join(" "));
         };
         parsers.borderColor = function(value, normalize) {
-            return mirror4(parse(value, normalize).split(" ")).join(" ");
+            value = string(value).match(colorRe);
+            if (!value) return normalize ? mirror4([ "rgba(0,0,0,1)" ]).join(" ") : "";
+            return clean(mirror4(map(value, function(v) {
+                return parseColor(v, normalize);
+            })).join(" "));
         };
         each([ "Width", "Style", "Color" ], function(name) {
             getters["border" + name] = function() {
@@ -355,10 +367,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return value;
         };
         parsers.zIndex = parseString;
-        var html = document.documentElement;
-        var filterName = html.style.MsFilter != null ? "MsFilter" : html.style.filter != null ? "filter" : null;
+        var filterName = test.style.MsFilter != null ? "MsFilter" : test.style.filter != null ? "filter" : null;
         parsers.opacity = parseOpacity;
-        if (filterName && html.style.opacity == null) {
+        if (filterName && test.style.opacity == null) {
             matchOp = /alpha\(opacity=([\d.]+)\)/i;
             setters.opacity = function(value) {
                 value = (value = number(value) === 1) ? "" : "alpha(opacity=" + value * 100 + ")";
@@ -373,12 +384,12 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         parsers.boxShadow = parsers.textShadow = parseShadow;
         var transitionName;
         each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
-            if (html.style[transition] != null) transitionName = transition;
+            if (test.style[transition] != null) transitionName = transition;
         });
         aliases.transition = transitionName;
         var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd";
         each([ "MozTransform", "WebkitTransform", "OTransform", "msTransform", "transform" ], function(transform) {
-            if (html.style[transform] != null) aliases.transform = transform;
+            if (test.style[transform] != null) aliases.transform = transform;
         });
         var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
