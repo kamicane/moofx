@@ -120,8 +120,10 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var iterator = function(time) {
             if (time == null) time = +(new Date);
             running = false;
-            var i = callbacks.length;
-            while (i) callbacks.splice(--i, 1)[0](time);
+            for (var i = callbacks.length; i--; ) {
+                var callback = callbacks.shift();
+                if (callback) callback(time);
+            }
         };
         var requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
             return setTimeout(callback, 1e3 / 60);
@@ -135,9 +137,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return this;
         };
         exports.cancel = function(match) {
-            for (var i = 0, l = callbacks.length; i < l; i++) {
-                var callback = callbacks[i];
-                if (callback === match) callbacks.splice(i, 1);
+            for (var i = callbacks.length; i--; ) if (callbacks[i] === match) {
+                callbacks.splice(i, 1);
+                break;
             }
             return this;
         };
@@ -260,8 +262,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return parseLength(v, normalize, node);
             })).join(" "));
         };
-        var parseShadow = function(value, normalize, node) {
-            var normalized = "0px 0px 0px 0px rgba(0,0,0,0)";
+        var parseShadow = function(value, normalize, node, len) {
+            var ncolor = "rgba(0,0,0,0)", normalized = len === 3 ? ncolor + " 0px 0px 0px" : ncolor + " 0px 0px 0px 0px";
             if (value == null || value === "") return normalize ? normalized : "";
             if (value === "none") return normalize ? normalized : value;
             var colors = [], value = clean(value).replace(colorRe, function(match) {
@@ -273,7 +275,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 lengths = map(lengths, function(m) {
                     return parseLength(m, normalize, node);
                 });
-                while (lengths.length < 4) lengths.push("0px");
+                while (lengths.length < len) lengths.push("0px");
                 var ret = inset ? [ "inset", c ] : [ c ];
                 return ret.concat(lengths).join(" ");
             }).join(", ");
@@ -381,7 +383,12 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return string(!match ? 1 : match[1] / 100);
             };
         }
-        parsers.boxShadow = parsers.textShadow = parseShadow;
+        parsers.boxShadow = function(value, normalize, node) {
+            return parseShadow(value, normalize, node, 4);
+        };
+        parsers.textShadow = function(value, normalize, node) {
+            return parseShadow(value, normalize, node, 3);
+        };
         var transitionName;
         each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
             if (test.style[transition] != null) transitionName = transition;
@@ -477,7 +484,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (prepared) {
                 this.time = 0;
                 var fromN = numbers(prepared[0]), toN = numbers(prepared[1]);
-                if (fromN[0].length !== toN[0].length || (p === parseShadow || p === parse) && fromN[1] !== toN[1]) {
+                if (fromN[0].length !== toN[0].length || (p === parsers.boxShadow || p === parsers.textShadow || p === parse) && fromN[1] !== toN[1]) {
                     this.set(to);
                     requestFrame(this.callback);
                     return null;
