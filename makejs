@@ -3,7 +3,6 @@
 var wrup = require("wrapup")
 var fs = require("fs")
 var json = require("./package")
-var prime = require("prime")
 
 console.warn("")
 console.warn("              .- " + json.version)
