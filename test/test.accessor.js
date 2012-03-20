@@ -1,7 +1,7 @@
 describe('computes', function (){
-	
+
 	var test, testee, testEl, testeeEl
-	
+
 	before(function(){
 		testEl = document.getElementById('test')
 		test = moofx(testEl)
@@ -12,15 +12,15 @@ describe('computes', function (){
 	it('should compute and normalize styles', function(){
 		//get
 		expect(testee.compute('width')).to.be("100px")
-		
+
 		//change the value for good measure
 		testee.style('width', '10%')
 		expect(testee.compute('width')).to.be("10px")
-		
+
 		//auto
 		testee.style('width', 'auto')
 		expect(testee.compute('height')).to.be(testeeEl.clientHeight - 20 + 'px') //clientHeight + paddings
-		
+
 		//more random computes/normalizers
 		expect(testee.compute('backgroundColor')).to.be("rgba(0,0,0,1)")
 		expect(testee.compute('borderTopStyle')).to.be("dotted")
@@ -31,12 +31,12 @@ describe('computes', function (){
 		expect(test.compute('position')).to.be("absolute")
 		expect(test.compute('top')).to.be("-1000px")
 		expect(test.compute('left')).to.be("-1000px")
-		
+
 		//border normalizers
 		testee.style('border', "0px none transparent")
 		expect(testee.compute('border')).to.be("0px none rgba(0,0,0,0)")
 	})
-	
+
 	it('should reset to default css', function(){
 		testee.style('width', '')
 		expect(testee.compute('width')).to.be("100px")

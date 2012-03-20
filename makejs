@@ -3,6 +3,7 @@
 var wrup = require("wrapup")
 var fs = require("fs")
 var json = require("./package")
+var prime = require("prime")
 
 console.warn("")
 console.warn("              .- " + json.version)
@@ -13,7 +14,7 @@ var header = "/*\n\
 ---\n\
 provides: moofx\n\
 version: " + json.version + "\n\
-description: A CSS3-enabled javascript animation library on caffeine\n\
+description: A CSS3-enabled javascript animation library\n\
 homepage: http://moofx.it\n\
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)\n\
 license: MIT (http://mootools.net/license.txt)\n\
@@ -22,10 +23,12 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 */\n\n"
 
 var wrupit = function(){
-	var pkg = wrup().package()
-	fs.writeFileSync("./moofx.js", header + pkg.up(), "utf-8")
-	fs.writeFileSync("./moofx-min.js", header + pkg.up({compress: true}), "utf-8")
-	console.log("  written moofx.js / moofx-min.js\n")
+    var pkg = wrup("array.isArray,array.every,array.some,array.filter,string.contains,"+
+                   "string.number,string.escape,string.decode fixEnumBug".split(",")).package()
+
+    fs.writeFileSync("./moofx.js", header + pkg.up(), "utf-8")
+    fs.writeFileSync("./moofx-min.js", header + pkg.up({compress: true}), "utf-8")
+    console.log("  written moofx.js / moofx-min.js\n")
 }
 
 wrupit()
@@ -34,21 +37,21 @@ var a2 = process.argv[2]
 
 if (a2 == '--watch' || a2 == '-w'){
 
-	console.log("  watching...\n")
+    console.log("  watching...\n")
 
-	var scripts = ['./lib/main.js', './lib/color.js', './lib/frame.js', './lib/browser.js']
+    var scripts = ['./lib/main.js', './lib/color.js', './lib/frame.js', './lib/browser.js']
 
-	scripts.forEach(function(script){
-		var filedata = fs.readFileSync(script, "utf-8")
+    scripts.forEach(function(script){
+        var filedata = fs.readFileSync(script, "utf-8")
 
-		fs.watchFile(script, {interval: 10}, function(){
-			var data = fs.readFileSync(script, "utf-8")
-			if (filedata !== data){
-				wrupit()
-				filedata = data
-			}
-		})
+        fs.watchFile(script, {interval: 10}, function(){
+            var data = fs.readFileSync(script, "utf-8")
+            if (filedata !== data){
+                wrupit()
+                filedata = data
+            }
+        })
 
-	})
+    })
 
 }

@@ -1,6 +1,6 @@
 {
 	"name": "moofx",
-	"description": "A CSS3-enabled javascript animation library on caffeine",
+	"description": "A CSS3-enabled javascript animation library for node and the browser",
 	"version": "3.0.5-dev",
 	"license": "MIT (http://mootools.net/license.txt)",
 	"main": "./lib/main.js",
@@ -19,7 +19,8 @@
 		"url": "https://github.com/kamicane/moofx.git"
 	},
 	"dependencies": {
-		"cubic-bezier": "0.1.2"
+		"cubic-bezier": "0.1.2",
+        "prime": "0.0.2-alpha"
 	},
 	"sources": [
 		"./moofx.js"

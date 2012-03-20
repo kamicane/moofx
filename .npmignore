@@ -8,3 +8,4 @@ test/*
 README.*
 moofx.js
 moofx-min.js
+.tm_properties

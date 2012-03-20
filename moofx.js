@@ -1,3 +1,15 @@
+/*
+---
+provides: moofx
+version: 3.0.5-dev
+description: A CSS3-enabled javascript animation library
+homepage: http://moofx.it
+author: Valerio Proietti <@kamicane> (http://mad4milk.net)
+license: MIT (http://mootools.net/license.txt)
+includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
+...
+*/
+
 (function(modules) {
     var cache = {}, require = function(id) {
         var module;
@@ -9,10 +21,11 @@
         modules[id].call(exports, require, module, exports, window);
         return module.exports;
     };
-    window.moofx = require("0");
+    window["moofx"] = require("0");
 })({
     "0": function(require, module, exports, global) {
-        var color = require("1"), frame = require("2"), moofx = typeof document != "undefined" ? require("3") : {};
+        var color = require("1"), frame = require("2");
+        var moofx = typeof document !== "undefined" ? require("3") : {};
         moofx.requestFrame = frame.request;
         moofx.cancelFrame = frame.cancel;
         moofx.color = color;
@@ -36,76 +49,98 @@
             teal: "#008080",
             black: "#000000",
             silver: "#c0c0c0",
-            gray: "#808080"
-        }, RGBtoRGB = function(r, g, b, a) {
-            a == null && (a = 1);
+            gray: "#808080",
+            transparent: "#0000"
+        };
+        var RGBtoRGB = function(r, g, b, a) {
+            if (a == null) a = 1;
             r = parseInt(r, 10);
             g = parseInt(g, 10);
             b = parseInt(b, 10);
             a = parseFloat(a);
-            return r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0 ? [ Math.round(r), Math.round(g), Math.round(b), a ] : null;
-        }, HEXtoRGB = function(hex) {
-            hex.length === 3 && (hex += "f");
+            if (!(r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0)) return null;
+            return [ Math.round(r), Math.round(g), Math.round(b), a ];
+        };
+        var HEXtoRGB = function(hex) {
+            if (hex.length === 3) hex += "f";
             if (hex.length === 4) {
                 var h0 = hex.charAt(0), h1 = hex.charAt(1), h2 = hex.charAt(2), h3 = hex.charAt(3);
                 hex = h0 + h0 + h1 + h1 + h2 + h2 + h3 + h3;
             }
-            hex.length === 6 && (hex += "ff");
+            if (hex.length === 6) hex += "ff";
             var rgb = [];
-            for (var i = 0, l = hex.length; i <= l; i += 2) rgb.push(parseInt(hex.substr(i, 2), 16) / (i === 6 ? 255 : 1));
+            for (var i = 0, l = hex.length; i < l; i += 2) rgb.push(parseInt(hex.substr(i, 2), 16) / (i === 6 ? 255 : 1));
             return rgb;
-        }, HUEtoRGB = function(p, q, t) {
-            t < 0 && (t += 1);
-            t > 1 && (t -= 1);
-            return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-        }, HSLtoRGB = function(h, s, l, a) {
+        };
+        var HUEtoRGB = function(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        var HSLtoRGB = function(h, s, l, a) {
             var r, b, g;
-            a == null && (a = 1);
+            if (a == null) a = 1;
             h /= 360;
             s /= 100;
             l /= 100;
             a /= 1;
             if (h > 1 || h < 0 || s > 1 || s < 0 || l > 1 || l < 0 || a > 1 || a < 0) return null;
-            if (s === 0) r = b = g = l; else {
-                var q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+            if (s === 0) {
+                r = b = g = l;
+            } else {
+                var q = l < .5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
                 r = HUEtoRGB(p, q, h + 1 / 3);
                 g = HUEtoRGB(p, q, h);
                 b = HUEtoRGB(p, q, h - 1 / 3);
             }
             return [ r * 255, g * 255, b * 255, a ];
         };
-        module.exports = function(input, array) {
-            var match;
-            if (typeof input != "string") return null;
-            input = colors[input = input.replace(/\s+/g, "")] || input;
-            if (input.match(/^#[a-f0-9]{3,8}/)) input = HEXtoRGB(input.replace("#", "")); else {
-                if (!(match = input.match(/([\d.])+/g))) return null;
-                if (input.match(/^rgb/)) input = match; else {
-                    if (!input.match(/^hsl/)) return null;
-                    input = HSLtoRGB.apply(null, match);
-                }
-            }
-            if (!input || !(input = RGBtoRGB.apply(null, input))) return null;
+        var keys = [];
+        for (var c in colors) keys.push(c);
+        var shex = "(?:#([a-f0-9]{3,8}))", sval = "\\s*([.\\d%]+)\\s*", sop = "(?:,\\s*([.\\d]+)\\s*)?", slist = "\\(" + [ sval, sval, sval ] + sop + "\\)", srgb = "(?:rgb)a?", shsl = "(?:hsl)a?", skeys = "(" + keys.join("|") + ")";
+        var xhex = RegExp(shex), xrgb = RegExp(srgb + slist), xhsl = RegExp(shsl + slist);
+        var color = function(input, array) {
+            if (input == null) return null;
+            input = (input + "").replace(/\s+/, "");
+            var match = colors[input];
+            if (match) {
+                return color(match, array);
+            } else if (match = input.match(xhex)) {
+                input = HEXtoRGB(match[1]);
+            } else if (match = input.match(xrgb)) {
+                input = match.slice(1);
+            } else if (match = input.match(xhsl)) {
+                input = HSLtoRGB.apply(null, match.slice(1));
+            } else return null;
+            if (!(input && (input = RGBtoRGB.apply(null, input)))) return null;
             if (array) return input;
-            input[3] === 1 && input.splice(3, 1);
-            return "rgb" + (input.length > 3 ? "a" : "") + "(" + input + ")";
+            if (input[3] === 1) input.splice(3, 1);
+            return "rgb" + (input.length === 4 ? "a" : "") + "(" + input + ")";
         };
+        color.x = RegExp([ skeys, shex, srgb + slist, shsl + slist ].join("|"), "g");
+        module.exports = color;
     },
     "2": function(require, module, exports, global) {
-        var callbacks = [], running = !1, iterator = function(time) {
-            time == null && (time = +(new Date));
-            running = !1;
+        var callbacks = [], running = false;
+        var iterator = function(time) {
+            if (time == null) time = +(new Date);
+            running = false;
             for (var i = callbacks.length; i--; ) {
                 var callback = callbacks.shift();
-                callback && callback(time);
+                if (callback) callback(time);
             }
-        }, requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
+        };
+        var requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
             return setTimeout(callback, 1e3 / 60);
         };
         exports.request = function(callback) {
             callbacks.push(callback);
             if (!running) {
-                running = !0;
+                running = true;
                 requestFrame(iterator);
             }
             return this;
@@ -119,36 +154,13 @@
         };
     },
     "3": function(require, module, exports, global) {
-        var bezier = require("4"), color = require("1"), frame = require("2"), inherits = function(parent, child) {
-            var C = function() {
-                this.constructor = parent;
-            }, proto = C.prototype = parent.prototype;
-            child.prototype = new C;
-            child.prototype.parent = proto;
-            return child;
-        }, cancelFrame = frame.cancel, requestFrame = frame.request, string = String, number = parseFloat, camelize = function(self) {
-            return self.replace(/-\D/g, function(match) {
-                return match.charAt(1).toUpperCase();
-            });
-        }, hyphenate = function(self) {
-            return self.replace(/[A-Z]/g, function(match) {
-                return "-" + match.charAt(0).toLowerCase();
-            });
-        }, clean = function(self) {
-            return string(self).replace(whiteRe, " ").replace(/^\s+|\s+$/g, "");
-        }, map = Array.map || Array.prototype.map ? function(array, fn, context) {
-            return Array.prototype.map.call(array, fn, context);
-        } : function(array, fn, context) {
-            var result = [];
-            for (var i = 0, l = array.length; i < l; i++) result.push(fn.call(context, array[i], i, array));
-            return result;
-        }, each = Array.prototype.forEach ? function(array, fn, context) {
-            Array.prototype.forEach.call(array, fn, context);
-            return array;
-        } : function(array, fn, context) {
-            for (var i = 0, l = array.length; i < l; i++) fn.call(context, array[i], i, array);
-            return array;
-        }, compute = global.getComputedStyle ? function(node) {
+        var bezier = require("4"), color = require("1"), frame = require("2");
+        var cancelFrame = frame.cancel, requestFrame = frame.request;
+        var prime = require("5"), array = require("6"), string = require("8");
+        var camelize = string.camelize, hyphenate = string.hyphenate, clean = string.clean, capitalize = string.capitalize;
+        var map = array.map, each = array.forEach, indexOf = array.indexOf;
+        var n = parseFloat;
+        var compute = global.getComputedStyle ? function(node) {
             var cts = getComputedStyle(node);
             return function(property) {
                 return cts ? cts.getPropertyValue(hyphenate(property)) : "";
@@ -158,7 +170,10 @@
             return function(property) {
                 return cts ? cts[camelize(property)] : "";
             };
-        }, test = document.createElement("div"), cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;", pixelRatio = function(element, u) {
+        };
+        var test = document.createElement("div");
+        var cssText = "border:none;margin:none;padding:none;visibility:hidden;position:absolute;height:0;";
+        var pixelRatio = function(element, u) {
             var parent = element.parentNode, ratio = 1;
             if (parent) {
                 test.style.cssText = cssText + ("width:100" + u + ";");
@@ -167,60 +182,75 @@
                 parent.removeChild(test);
             }
             return ratio;
-        }, mirror4 = function(values) {
+        };
+        var mirror4 = function(values) {
             var length = values.length;
-            length === 1 ? values.push(values[0], values[0], values[0]) : length === 2 ? values.push(values[0], values[1]) : length === 3 && values.push(values[1]);
+            if (length === 1) values.push(values[0], values[0], values[0]); else if (length === 2) values.push(values[0], values[1]); else if (length === 3) values.push(values[1]);
             return values;
-        }, colorRe = /(rgb[a]?\([-.\d,\s]+\))|(hsl[a]?\([-.\d,\s]+\))|(#[a-f0-9]{3,8})|(maroon|red|orange|yellow|olive|purple|fuchsia|white|lime|green|navy|blue|aqua|teal|black|silver|gray|transparent)/g, lengthRe = /([-.\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)/g, rLengthRe = /([-.\d]+)([\w%]+)?/, rLengthReG = /([-.\d]+)([\w%]+)?/g, borderStyleRe = /none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit/, cubicBezierRe = /cubic-bezier\(([-.\d]+),([-.\d]+),([-.\d]+),([-.\d]+)\)/, cubicBezierReG = /cubic-bezier\(([-.\d,]+)\)/g, durationRe = /([\d.]+)(s|ms)?/, whiteRe = /\s+/g, parseString = function(value) {
-            return value == null ? "" : value;
-        }, parseOpacity = function(value, normalize) {
+        };
+        var sLength = "([-.\\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)", sLengthLax = "([-.\\d]+)([\\w%]+)?", sBorderStyle = "none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit", sCubicBezier = "cubic-bezier\\(([-.\\d]+),([-.\\d]+),([-.\\d]+),([-.\\d]+)\\)", sDuration = "([\\d.]+)(s|ms)?";
+        var rgLength = RegExp(sLength, "g"), rLengthLax = RegExp(sLengthLax), rgLengthLax = RegExp(sLengthLax, "g"), rBorderStyle = RegExp(sBorderStyle), rCubicBezier = RegExp(sCubicBezier), rgCubicBezier = RegExp(sCubicBezier, "g"), rDuration = RegExp(sDuration);
+        var parseString = function(value) {
+            return value == null ? "" : value + "";
+        };
+        var parseOpacity = function(value, normalize) {
             if (value == null || value === "") return normalize ? "1" : "";
-            var n = number(value);
-            return isFinite(n) ? string(n) : "1";
+            var number = n(value);
+            return isFinite(number) ? number + "" : "1";
         };
         try {
             test.style.color = "rgba(0,0,0,0.5)";
         } catch (e) {}
-        var rgba = /^rgba/.test(test.style.color), parseColor = function(value, normalize) {
-            if (value == null || value === "") return normalize ? "rgba(0,0,0,1)" : "";
-            if (value == "transparent") return normalize ? "rgba(0,0,0,0)" : value;
-            var c = color(value, !0);
-            return c ? c[3] === 0 && !rgba ? "transparent" : !normalize && (!rgba || c[3] === 1) ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")" : normalize ? "rgba(0,0,0,1)" : "";
-        }, parseLength = function(value, normalize, node) {
+        var rgba = /^rgba/.test(test.style.color);
+        var parseColor = function(value, normalize) {
+            if (!value) return normalize ? "rgba(0,0,0,1)" : "";
+            if (value === "transparent") return normalize ? "rgba(0,0,0,0)" : value;
+            var c = color(value, true);
+            if (!c) return normalize ? "rgba(0,0,0,1)" : "";
+            if (c[3] === 0 && !rgba) return "transparent";
+            return !normalize && (!rgba || c[3] === 1) ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")";
+        };
+        var parseLength = function(value, normalize, node) {
             if (value == null || value === "") return normalize ? "0px" : "";
-            var match = string(value).match(rLengthRe);
+            var match = string.match(value, rLengthLax);
             if (!match) return value;
-            var value = number(match[1]), unit = match[2] || "px";
-            return value == 0 ? value + unit : node && unit !== "px" ? pixelRatio(node, unit) * value + "px" : value + unit;
-        }, parseBorderStyle = function(value, normalize) {
+            var value = n(match[1]), unit = match[2] || "px";
+            if (value === 0) return value + unit;
+            return node && unit !== "px" ? pixelRatio(node, unit) * value + "px" : value + unit;
+        };
+        var parseBorderStyle = function(value, normalize) {
             if (value == null || value === "") return normalize ? "none" : "";
-            var match = value.match(borderStyleRe);
+            var match = value.match(rBorderStyle);
             return match ? value : normalize ? "none" : "";
-        }, parseBorder = function(value, normalize, node) {
+        };
+        var parseBorder = function(value, normalize, node) {
             var normalized = "0px none rgba(0,0,0,1)";
             if (value == null || value === "") return normalize ? normalized : "";
-            if (value == 0 || value === "none") return normalize ? normalized : value;
+            if (value === 0 || value === "none") return normalize ? normalized : value;
             var c;
-            value = value.replace(colorRe, function(match) {
+            value = value.replace(color.x, function(match) {
                 c = match;
                 return "";
             });
-            var s = value.match(borderStyleRe), l = value.match(rLengthRe);
+            var s = value.match(rBorderStyle), l = value.match(rgLengthLax);
             return clean([ parseLength(l ? l[0] : "", normalize, node), parseBorderStyle(s ? s[0] : "", normalize), parseColor(c, normalize) ].join(" "));
-        }, parseShort4 = function(value, normalize, node) {
-            return value == null || value === "" ? normalize ? "0px 0px 0px 0px" : "" : clean(mirror4(map(clean(value).split(" "), function(v) {
+        };
+        var parseShort4 = function(value, normalize, node) {
+            if (value == null || value === "") return normalize ? "0px 0px 0px 0px" : "";
+            return clean(mirror4(map(clean(value).split(" "), function(v) {
                 return parseLength(v, normalize, node);
             })).join(" "));
-        }, parseShadow = function(value, normalize, node, len) {
+        };
+        var parseShadow = function(value, normalize, node, len) {
             var ncolor = "rgba(0,0,0,0)", normalized = len === 3 ? ncolor + " 0px 0px 0px" : ncolor + " 0px 0px 0px 0px";
             if (value == null || value === "") return normalize ? normalized : "";
             if (value === "none") return normalize ? normalized : value;
-            var colors = [], value = clean(value).replace(colorRe, function(match) {
+            var colors = [], value = clean(value).replace(color.x, function(match) {
                 colors.push(match);
                 return "";
             });
             return map(value.split(","), function(shadow, i) {
-                var c = parseColor(colors[i], normalize), inset = /inset/.test(shadow), lengths = shadow.match(rLengthReG) || [ "0px" ];
+                var c = parseColor(colors[i], normalize), inset = /inset/.test(shadow), lengths = shadow.match(rgLengthLax) || [ "0px" ];
                 lengths = map(lengths, function(m) {
                     return parseLength(m, normalize, node);
                 });
@@ -228,27 +258,33 @@
                 var ret = inset ? [ "inset", c ] : [ c ];
                 return ret.concat(lengths).join(" ");
             }).join(", ");
-        }, parse = function(value, normalize, node) {
-            return value == null || value === "" ? "" : value.replace(colorRe, function(match) {
+        };
+        var parse = function(value, normalize, node) {
+            if (value == null || value === "") return "";
+            return value.replace(color.x, function(match) {
                 return parseColor(match, normalize);
-            }).replace(lengthRe, function(match) {
+            }).replace(rgLength, function(match) {
                 return parseLength(match, normalize, node);
             });
-        }, getters = {}, setters = {}, parsers = {}, aliases = {}, getter = function(key) {
+        };
+        var getters = {}, setters = {}, parsers = {}, aliases = {};
+        var getter = function(key) {
             return getters[key] || (getters[key] = function() {
                 var alias = aliases[key] || key, parser = parsers[key] || parse;
                 return function() {
-                    return parser(compute(this)(alias), !0, this);
+                    return parser(compute(this)(alias), true, this);
                 };
             }());
-        }, setter = function(key) {
+        };
+        var setter = function(key) {
             return setters[key] || (setters[key] = function() {
                 var alias = aliases[key] || key, parser = parsers[key] || parse;
                 return function(value) {
                     this.style[alias] = parser(value);
                 };
             }());
-        }, trbl = [ "Top", "Right", "Bottom", "Left" ], tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
+        };
+        var trbl = [ "Top", "Right", "Bottom", "Left" ], tlbl = [ "TopLeft", "TopRight", "BottomRight", "BottomLeft" ];
         each(trbl, function(d) {
             var bd = "border" + d;
             each([ "margin" + d, "padding" + d, bd + "Width", d.toLowerCase() ], function(n) {
@@ -276,16 +312,17 @@
         });
         parsers.borderWidth = parseShort4;
         parsers.borderStyle = function(value, normalize, node) {
+            if (value == null || value === "") return normalize ? mirror4([ "none" ]).join(" ") : "";
             value = clean(value).split(" ");
             return clean(mirror4(map(value, function(v) {
                 parseBorderStyle(v, normalize);
             })).join(" "));
         };
         parsers.borderColor = function(value, normalize) {
-            value = string(value).match(colorRe);
-            return value ? clean(mirror4(map(value, function(v) {
+            if (!value || !(value = string.match(value, color.x))) return normalize ? mirror4([ "rgba(0,0,0,1)" ]).join(" ") : "";
+            return clean(mirror4(map(value, function(v) {
                 return parseColor(v, normalize);
-            })).join(" ")) : normalize ? mirror4([ "rgba(0,0,0,1)" ]).join(" ") : "";
+            })).join(" "));
         };
         each([ "Width", "Style", "Color" ], function(name) {
             getters["border" + name] = function() {
@@ -308,51 +345,51 @@
                 if (pvalue && value !== pvalue) return null;
                 pvalue = value;
             }
-            return value;
+            return pvalue;
         };
         parsers.zIndex = parseString;
         var filterName = test.style.MsFilter != null ? "MsFilter" : test.style.filter != null ? "filter" : null;
         parsers.opacity = parseOpacity;
         if (filterName && test.style.opacity == null) {
-            matchOp = /alpha\(opacity=([\d.]+)\)/i;
+            var matchOp = /alpha\(opacity=([\d.]+)\)/i;
             setters.opacity = function(value) {
-                value = (value = number(value)) === 1 ? "" : "alpha(opacity=" + value * 100 + ")";
+                value = (value = n(value)) === 1 ? "" : "alpha(opacity=" + value * 100 + ")";
                 var filter = compute(this)(filterName);
                 return this.style[filterName] = matchOp.test(filter) ? filter.replace(matchOp, value) : filter + value;
             };
             getters.opacity = function() {
                 var match = compute(this)(filterName).match(matchOp);
-                return string(match ? match[1] / 100 : 1);
+                return (!match ? 1 : match[1] / 100) + "";
             };
         }
-        parsers.boxShadow = function(value, normalize, node) {
+        var parseBoxShadow = parsers.boxShadow = function(value, normalize, node) {
             return parseShadow(value, normalize, node, 4);
         };
-        parsers.textShadow = function(value, normalize, node) {
+        var parseTextShadow = parsers.textShadow = function(value, normalize, node) {
             return parseShadow(value, normalize, node, 3);
         };
-        var transitionName;
-        each([ "WebkitTransition", "MozTransition", "transition" ], function(transition) {
-            test.style[transition] != null && (transitionName = transition);
-        });
-        aliases.transition = transitionName;
-        var transitionEndName = transitionName === "MozTransition" ? "transitionend" : transitionName === "WebkitTransition" ? "webkitTransitionEnd" : "transitionEnd";
-        each([ "MozTransform", "WebkitTransform", "OTransform", "msTransform", "transform" ], function(transform) {
-            test.style[transform] != null && (aliases.transform = transform);
-        });
-        each([ "MozTransform", "WebkitTransform", "OTransform", "msTransform", "transform" ], function(transform) {
-            each([ "", "Origin", "Style" ], function(type) {
-                test.style[transform + type] != null && (aliases["transform" + type] = transform + type);
+        each([ "Webkit", "Moz", "O", "ms", null ], function(prefix) {
+            each([ "transition", "transform", "transformOrigin", "transformStyle", "perspective", "backfaceVisibility" ], function(style) {
+                var cc = prefix ? prefix + capitalize(style) : style;
+                if (test.style[cc] != null) aliases[style] = cc;
             });
         });
-        each([ "MozPerspective", "WebkitPerspective", "OPerspective", "msPerspective", "perspective" ], function(perspective) {
-            each([ "", "Origin" ], function(type) {
-                test.style[perspective + type] != null && (aliases["perspective" + type] = perspective + type);
-            });
-        });
-        each([ "MozBackfaceVisibility", "WebkitBackfaceVisibility", "OBackfaceVisibility", "msBackfaceVisibility", "backfaceVisibility" ], function(backface) {
-            test.style[backface] != null && (aliases.backfaceVisibility = backface);
-        });
+        var transitionName = aliases.transition, transitionEndName = "transitionEnd";
+        console.log(aliases);
+        switch (aliases.transition) {
+          case "MozTransition":
+            transitionEndName = "transitionend";
+            break;
+          case "WebkitTransition":
+            transitionEndName = "webkitTransitionEnd";
+            break;
+          case "OTransition":
+            transitionEndName = "OTransitionEnd";
+            break;
+          case "msTransition":
+            transitionEndName = "msTransitionEnd";
+            break;
+        }
         var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
             linear: "cubic-bezier(0, 0, 1, 1)",
@@ -361,202 +398,213 @@
             "ease-in-out": "cubic-bezier(0.42, 0, 0.58, 1.0)"
         };
         equations.ease = equations["default"];
-        var BrowserAnimation = function(node, property) {
-            var _getter = getter(property), _setter = setter(property);
-            this.get = function() {
-                return _getter.call(node);
-            };
-            this.set = function(value) {
-                return _setter.call(node, value);
-            };
-            this.node = node;
-            this.property = property;
-            this.parse = parsers[property] || parse;
-        };
-        BrowserAnimation.prototype.setOptions = function(options) {
-            options == null && (options = {});
-            var duration = options.duration;
-            if (!(this.duration = this.parseDuration(duration || "500ms"))) throw new Error(this.duration + " is not a valid duration");
-            if (!(this.equation = this.parseEquation(options.equation || "default"))) throw new Error(this.equation + " is not a valid equation");
-            this.callback = options.callback || function() {};
-            return this;
-        };
-        BrowserAnimation.prototype.prepare = function(to) {
-            if (this.duration === 0) {
-                this.set(to);
-                requestFrame(this.callback);
-                return null;
-            }
-            var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, !0);
-            if (p === parseLength || p === parseBorder || p === parseShort4) {
-                var toUnits = toParsed.match(lengthRe), i = 0;
-                toUnits && (fromParsed = fromParsed.replace(lengthRe, function(fromMatch) {
-                    var toMatch = toUnits[i++], fromValue = fromMatch.match(rLengthRe)[1], toUnit = toMatch.match(rLengthRe)[2];
-                    return toUnit !== "px" ? fromValue / pixelRatio(node, toUnit) + toUnit : fromMatch;
-                }));
-                i > 0 && this.set(fromParsed);
-            }
-            if (fromParsed === toParsed) {
-                requestFrame(this.callback);
-                return null;
-            }
-            return [ fromParsed, toParsed ];
-        };
-        BrowserAnimation.prototype.parseDuration = function(duration) {
-            if (duration = string(duration).match(durationRe)) {
-                var time = number(duration[1]), unit = duration[2] || "ms";
-                if (unit === "s") return time * 1e3;
-                if (unit === "ms") return time;
-            }
-            return null;
-        };
-        BrowserAnimation.prototype.parseEquation = function(equation) {
-            equation = equations[equation] || equation;
-            var match = equation.replace(whiteRe, "").match(cubicBezierRe);
-            return match ? map(match.slice(1), number) : null;
-        };
-        var JSAnimation = inherits(BrowserAnimation, function(node, property) {
-            this.parent.constructor.call(this, node, property);
-            var self = this;
-            this.bstep = function(t) {
-                return self.step(t);
-            };
-        }), numbers = function(string) {
-            var ns = [], replaced = string.replace(/[-.\d]+/g, function(n) {
-                ns.push(number(n));
-                return "@";
-            });
-            return [ ns, replaced ];
-        }, calc = function(from, to, delta) {
-            return (to - from) * delta + from;
-        };
-        JSAnimation.prototype.start = function(to) {
-            var prepared = this.prepare(to), p = this.parse;
-            if (prepared) {
-                this.time = 0;
-                var fromN = numbers(prepared[0]), toN = numbers(prepared[1]);
-                if (fromN[0].length !== toN[0].length || (p === parsers.boxShadow || p === parsers.textShadow || p === parse) && fromN[1] !== toN[1]) {
+        var BrowserAnimation = prime({
+            constructor: function(node, property) {
+                var _getter = getter(property), _setter = setter(property);
+                this.get = function() {
+                    return _getter.call(node);
+                };
+                this.set = function(value) {
+                    return _setter.call(node, value);
+                };
+                this.node = node;
+                this.property = property;
+                this.parse = parsers[property] || parse;
+            },
+            setOptions: function(options) {
+                if (options == null) options = {};
+                var duration = options.duration;
+                if (!(this.duration = this.parseDuration(duration || "500ms"))) throw new Error(this.duration + " is not a valid duration");
+                if (!(this.equation = this.parseEquation(options.equation || "default"))) throw new Error(this.equation + " is not a valid equation");
+                this.callback = options.callback || function() {};
+                return this;
+            },
+            prepare: function(to) {
+                if (this.duration === 0) {
                     this.set(to);
                     requestFrame(this.callback);
                     return null;
+                } else {
+                    var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, true);
+                    if (p === parseLength || p === parseBorder || p === parseShort4) {
+                        var toUnits = toParsed.match(rgLength), i = 0;
+                        if (toUnits) fromParsed = fromParsed.replace(rgLength, function(fromMatch) {
+                            var toMatch = toUnits[i++], fromValue = fromMatch.match(rLengthLax)[1], toUnit = toMatch.match(rLengthLax)[2];
+                            return toUnit !== "px" ? fromValue / pixelRatio(node, toUnit) + toUnit : fromMatch;
+                        });
+                        if (i > 0) this.set(fromParsed);
+                    }
+                    if (fromParsed === toParsed) {
+                        requestFrame(this.callback);
+                        return null;
+                    } else {
+                        return [ fromParsed, toParsed ];
+                    }
                 }
-                this.from = fromN[0];
-                this.to = toN[0];
-                this.template = toN[1];
-                requestFrame(this.bstep);
+            },
+            parseDuration: function(duration) {
+                if (duration = string.match(duration, rDuration)) {
+                    var time = n(duration[1]), unit = duration[2] || "ms";
+                    if (unit === "s") return time * 1e3;
+                    if (unit === "ms") return time;
+                }
+                return null;
+            },
+            parseEquation: function(equation) {
+                equation = equations[equation] || equation;
+                var match = equation.replace(/\s+/g, "").match(rCubicBezier);
+                return match ? map(match.slice(1), n) : null;
             }
-            return this;
-        };
-        JSAnimation.prototype.stop = function() {
-            cancelFrame(this.bstep);
-            return this;
-        };
-        JSAnimation.prototype.step = function(now) {
-            this.time || (this.time = now);
-            var factor = (now - this.time) / this.duration;
-            factor > 1 && (factor = 1);
-            var delta = this.equation(factor), tpl = this.template, from = this.from, to = this.to;
-            for (var i = 0, l = from.length; i < l; i++) {
-                var f = from[i], t = to[i];
-                tpl = tpl.replace("@", t !== f ? calc(f, t, delta) : t);
-            }
-            this.set(tpl);
-            factor !== 1 ? requestFrame(this.bstep) : this.callback(now);
-        };
-        JSAnimation.prototype.parseEquation = function(equation) {
-            var equation = this.parent.parseEquation.call(this, equation);
-            return equation == [ 0, 0, 1, 1 ] ? function(x) {
-                return x;
-            } : bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
-        };
-        var CSSAnimation = inherits(BrowserAnimation, function(node, property) {
-            this.parent.constructor.call(this, node, property);
-            var self = this;
-            this.bdefer = function(t) {
-                return self.defer(t);
-            };
-            this.bcomplete = function(e) {
-                return self.complete(e);
-            };
-            this.hproperty = hyphenate(aliases[property] || property);
         });
-        CSSAnimation.prototype.start = function(to) {
-            var prepared = this.prepare(to);
-            if (prepared) {
-                this.to = prepared[1];
-                requestFrame(this.bdefer);
+        var numbers = function(string) {
+            var ns = [], replaced = string.replace(/[-.\d]+/g, function(number) {
+                ns.push(n(number));
+                return "@";
+            });
+            return [ ns, replaced ];
+        };
+        var calc = function(from, to, delta) {
+            return (to - from) * delta + from;
+        };
+        var JSAnimation = prime({
+            inherits: BrowserAnimation,
+            constructor: function(node, property) {
+                JSAnimation.parent.constructor.call(this, node, property);
+                var self = this;
+                this.bstep = function(t) {
+                    return self.step(t);
+                };
+            },
+            start: function(to) {
+                var prepared = this.prepare(to), p = this.parse;
+                if (prepared) {
+                    this.time = 0;
+                    var fromN = numbers(prepared[0]), toN = numbers(prepared[1]);
+                    if (fromN[0].length !== toN[0].length || (p === parseBoxShadow || p === parseTextShadow || p === parse) && fromN[1] !== toN[1]) {
+                        this.set(to);
+                        requestFrame(this.callback);
+                        return null;
+                    }
+                    this.from = fromN[0];
+                    this.to = toN[0];
+                    this.template = toN[1];
+                    requestFrame(this.bstep);
+                }
+                return this;
+            },
+            stop: function() {
+                cancelFrame(this.bstep);
+                return this;
+            },
+            step: function(now) {
+                this.time || (this.time = now);
+                var factor = (now - this.time) / this.duration;
+                if (factor > 1) factor = 1;
+                var delta = this.equation(factor), tpl = this.template, from = this.from, to = this.to;
+                for (var i = 0, l = from.length; i < l; i++) {
+                    var f = from[i], t = to[i];
+                    tpl = tpl.replace("@", t !== f ? calc(f, t, delta) : t);
+                }
+                this.set(tpl);
+                if (factor !== 1) requestFrame(this.bstep); else this.callback(now);
+            },
+            parseEquation: function(equation) {
+                var equation = JSAnimation.parent.parseEquation.call(this, equation);
+                if (equation == [ 0, 0, 1, 1 ]) return function(x) {
+                    return x;
+                };
+                return bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
             }
-            return this;
-        };
-        CSSAnimation.prototype.stop = function(hard) {
-            if (this.running) {
-                this.running = !1;
-                hard && this.set(this.get());
-                this.clean();
-            } else cancelFrame(this.bdefer);
-            return this;
-        };
-        CSSAnimation.prototype.defer = function() {
-            this.running = !0;
-            this.modCSS(!0);
-            this.node.addEventListener(transitionEndName, this.bcomplete, !1);
-            this.set(this.to);
-            return null;
-        };
-        CSSAnimation.prototype.clean = function() {
-            this.modCSS();
-            this.node.removeEventListener(transitionEndName, this.bcomplete);
-            return null;
-        };
-        CSSAnimation.prototype.complete = function(e) {
-            if (e && e.propertyName === this.hproperty) {
-                this.running = !1;
-                this.clean();
-                this.callback(+(new Date));
-            }
-            return null;
-        };
+        });
         var removeProp = function(prop, a, b, c) {
-            var indexOf;
-            for (var i = 0, l = a.length; i < l; i++) {
-                if (a[i] !== prop) continue;
-                indexOf = i;
-                break;
-            }
-            if (indexOf != null) {
+            var index = indexOf(a, prop);
+            if (index !== -1) {
                 a.splice(indexOf, 1);
                 b.splice(indexOf, 1);
                 c.splice(indexOf, 1);
             }
         };
-        CSSAnimation.prototype.modCSS = function(inclusive) {
-            var rules = compute(this.node), p = rules(transitionName + "Property").replace(whiteRe, "").split(","), d = rules(transitionName + "Duration").replace(whiteRe, "").split(","), e = rules(transitionName + "TimingFunction").replace(whiteRe, "").match(cubicBezierReG);
-            removeProp("all", p, d, e);
-            removeProp(this.hproperty, p, d, e);
-            if (inclusive) {
-                p.push(this.hproperty);
-                d.push(this.duration);
-                e.push(this.equation);
+        var CSSAnimation = prime({
+            inherits: BrowserAnimation,
+            constructor: function(node, property) {
+                CSSAnimation.parent.constructor.call(this, node, property);
+                var self = this;
+                var hproperty = this.hproperty = hyphenate(aliases[property] || property);
+                this.bdefer = function(t) {
+                    return self.defer(t);
+                };
+                this.bcomplete = function(e) {
+                    return self.complete(hproperty);
+                };
+            },
+            start: function(to) {
+                var prepared = this.prepare(to);
+                if (prepared) {
+                    this.to = prepared[1];
+                    requestFrame(this.bdefer);
+                }
+                return this;
+            },
+            stop: function(hard) {
+                if (this.running) {
+                    this.running = false;
+                    if (hard) this.set(this.get());
+                    this.clean();
+                } else {
+                    cancelFrame(this.bdefer);
+                }
+                return this;
+            },
+            defer: function() {
+                this.running = true;
+                this.modCSS(true);
+                this.node.addEventListener(transitionEndName, this.bcomplete, false);
+                this.set(this.to);
+                return null;
+            },
+            clean: function() {
+                this.modCSS();
+                this.node.removeEventListener(transitionEndName, this.bcomplete);
+                return null;
+            },
+            complete: function(property) {
+                if (this.running && property === this.hproperty) {
+                    this.running = false;
+                    this.clean();
+                    this.callback(+(new Date));
+                }
+                return null;
+            },
+            modCSS: function(inclusive) {
+                var rules = compute(this.node), p = rules(transitionName + "Property").replace(/\s+/g, "").split(","), d = rules(transitionName + "Duration").replace(/\s+/g, "").split(","), e = rules(transitionName + "TimingFunction").replace(/\s+/g, "").match(rgCubicBezier);
+                removeProp("all", p, d, e);
+                removeProp(this.hproperty, p, d, e);
+                if (inclusive) {
+                    p.push(this.hproperty);
+                    d.push(this.duration);
+                    e.push(this.equation);
+                }
+                var tns = this.node.style;
+                tns[transitionName + "Property"] = p;
+                tns[transitionName + "Duration"] = d;
+                tns[transitionName + "TimingFunction"] = e;
+            },
+            parseDuration: function(duration) {
+                return CSSAnimation.parent.parseDuration.call(this, duration) + "ms";
+            },
+            parseEquation: function(equation) {
+                return "cubic-bezier(" + CSSAnimation.parent.parseEquation.call(this, equation) + ")";
             }
-            this.node.style[transitionName + "Property"] = p;
-            this.node.style[transitionName + "Duration"] = d;
-            this.node.style[transitionName + "TimingFunction"] = e;
-        };
-        CSSAnimation.prototype.parseDuration = function(duration) {
-            return BrowserAnimation.prototype.parseDuration.call(this, duration) + "ms";
-        };
-        CSSAnimation.prototype.parseEquation = function(equation) {
-            return "cubic-bezier(" + BrowserAnimation.prototype.parseEquation.call(this, equation) + ")";
-        };
+        });
         var animations = {
             uid: 0,
             animations: {},
             retrieve: function(node, property) {
-                var _base, _uid, uid = (_uid = node["µid"]) != null ? _uid : node["µid"] = (this.uid++).toString(36), animation = (_base = this.animations)[uid] || (_base[uid] = {});
-                return animation[property] || (animation[property] = transitionName ? new CSSAnimation(node, property) : new JSAnimation(node, property));
+                var _base, _uid, _prime = transitionName ? CSSAnimation : JSAnimation, uid = (_uid = node._muid) != null ? _uid : node._muid = (this.uid++).toString(36), animation = (_base = this.animations)[uid] || (_base[uid] = {});
+                return animation[property] || (animation[property] = new _prime(node, property));
             },
             starts: function(nodes, styles, options) {
-                options == null && (options = {});
+                if (options == null) options = {};
                 var type = typeof options;
                 options = type === "function" ? {
                     callback: options
@@ -565,7 +613,7 @@
                 } : options;
                 var callback = options.callback || function() {}, completed = 0, length = 0;
                 options.callback = function(t) {
-                    ++completed === length && callback(t);
+                    if (++completed === length) callback(t);
                 };
                 for (var property in styles) {
                     var value = styles[property], property = camelize(property);
@@ -585,7 +633,9 @@
                     var value = styles[property], set = setter(property = camelize(property));
                     for (var i = 0, l = nodes.length; i < l; i++) {
                         var node = nodes[i], aid, apid;
-                        (aid = this.animations[node["µid"]]) && (apid = aid[property]) && apid.stop(!0);
+                        if (aid = this.animations[node["µid"]]) {
+                            if (apid = aid[property]) apid.stop(true);
+                        }
                         set.call(node, value);
                     }
                 }
@@ -596,28 +646,31 @@
                 styles[property] = value;
                 return this.sets(nodes, styles);
             }
-        }, mu = function(nod) {
-            this.valueOf = function() {
-                return nod;
-            };
-            return this;
-        }, moofx = function(nod) {
-            return nod ? new mu(nod.length != null ? nod : nod.nodeType === 1 ? [ nod ] : []) : null;
         };
-        moofx.prototype = mu.prototype;
-        moofx.prototype.animate = function(A, B, C) {
-            typeof A != "string" ? animations.starts(this.valueOf(), A, B) : animations.start(this.valueOf(), A, B, C);
-            return this;
-        };
-        moofx.prototype.style = function(A, B) {
-            typeof A != "string" ? animations.sets(this.valueOf(), A) : animations.set(this.valueOf(), A, B);
-            return this;
-        };
-        moofx.prototype.compute = function(A) {
-            return getter(camelize(A)).call(this.valueOf()[0]);
-        };
+        var moofx = prime({
+            constructor: function(nodes) {
+                if (nodes == null) return;
+                if (!(this instanceof moofx)) return new moofx(nodes);
+                if (nodes.length == null) nodes = [ nodes ];
+                this.valueOf = function() {
+                    return nodes;
+                };
+            },
+            animate: function(A, B, C) {
+                if (typeof A !== "string") animations.starts(this.valueOf(), A, B); else animations.start(this.valueOf(), A, B, C);
+                return this;
+            },
+            style: function(A, B) {
+                if (typeof A !== "string") animations.sets(this.valueOf(), A); else animations.set(this.valueOf(), A, B);
+                return this;
+            },
+            compute: function(A) {
+                return getter(camelize(A)).call(this.valueOf()[0]);
+            }
+        });
         moofx.parse = function(property, value, normalize, node) {
-            return parsers[property = camelize(property)] ? parsers[property](value, normalize, node) : null;
+            if (!parsers[property = camelize(property)]) return null;
+            return parsers[property](value, normalize, node);
         };
         module.exports = moofx;
     },
@@ -626,10 +679,12 @@
             var curveX = function(t) {
                 var v = 1 - t;
                 return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
-            }, curveY = function(t) {
+            };
+            var curveY = function(t) {
                 var v = 1 - t;
                 return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
-            }, derivativeCurveX = function(t) {
+            };
+            var derivativeCurveX = function(t) {
                 var v = 1 - t;
                 return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (-t * t * t + 2 * v * t) * x2;
             };
@@ -640,7 +695,7 @@
                     if (Math.abs(x2) < epsilon) return curveY(t2);
                     d2 = derivativeCurveX(t2);
                     if (Math.abs(d2) < 1e-6) break;
-                    t2 -= x2 / d2;
+                    t2 = t2 - x2 / d2;
                 }
                 t0 = 0, t1 = 1, t2 = x;
                 if (t2 < t0) return curveY(t0);
@@ -648,11 +703,157 @@
                 while (t0 < t1) {
                     x2 = curveX(t2);
                     if (Math.abs(x2 - x) < epsilon) return curveY(t2);
-                    x > x2 ? t0 = t2 : t1 = t2;
+                    if (x > x2) t0 = t2; else t1 = t2;
                     t2 = (t1 - t0) * .5 + t0;
                 }
                 return curveY(t2);
             };
         };
+    },
+    "5": function(require, module, exports, global) {
+        "use strict";
+        var has = function(self, key) {
+            return Object.hasOwnProperty.call(self, key);
+        };
+        var each = function(object, method, context) {
+            for (var key in object) if (method.call(context, object[key], key, object) === false) break;
+            return object;
+        };
+        var create = Object.create || function(self) {
+            var F = function() {};
+            F.prototype = self;
+            return new F;
+        };
+        var extend = function(object, props) {
+            var self = create(object);
+            each(props, function(v, k) {
+                self[k] = v;
+            });
+            return self;
+        };
+        var mutator = function(key, value) {
+            this.prototype[key] = value;
+        };
+        var implement = function(obj) {
+            each(obj, function(value, key) {
+                if (key !== "constructor" && key !== "inherits" && key !== "mutator") this.mutator(key, value);
+            }, this);
+            return this;
+        };
+        var prime = function(proto) {
+            var superprime = proto.inherits, superproto;
+            if (superprime) superproto = superprime.prototype;
+            var constructor = has(proto, "constructor") ? proto.constructor : superprime ? function() {
+                return superproto.constructor.apply(this, arguments);
+            } : function() {};
+            if (superprime) {
+                var cproto = constructor.prototype = create(superproto);
+                constructor.parent = superproto;
+                cproto.constructor = constructor;
+            }
+            constructor.mutator = proto.mutator || superprime && superprime.mutator || mutator;
+            constructor.implement = implement;
+            return constructor.implement(proto);
+        };
+        prime.each = each;
+        prime.has = has;
+        prime.create = create;
+        module.exports = prime;
+    },
+    "6": function(require, module, exports, global) {
+        "use strict";
+        var shell = require("7");
+        var proto = Array.prototype;
+        var array = shell({
+            filter: proto.filter,
+            indexOf: proto.indexOf || function(item, from) {
+                for (var l = this.length >>> 0, i = from < 0 ? Math.max(0, l + from) : from || 0; i < l; i++) {
+                    if (i in this && this[i] === item) return i;
+                }
+                return -1;
+            },
+            map: proto.map || function(fn, context) {
+                var length = this.length >>> 0, results = Array(length);
+                for (var i = 0, l = length; i < l; i++) {
+                    if (i in this) results[i] = fn.call(context, this[i], i, this);
+                }
+                return results;
+            },
+            forEach: proto.forEach || function(fn, context) {
+                for (var i = 0, l = this.length >>> 0; i < l; i++) {
+                    if (i in this) fn.call(context, this[i], i, this);
+                }
+            },
+            every: proto.every,
+            some: proto.some
+        });
+        array.isArray = Array.isArray;
+        var methods = {};
+        var names = "pop,push,reverse,shift,sort,splice,unshift,concat,join,slice,lastIndexOf,reduce,reduceRight".split(",");
+        for (var i = 0, name, method; name = names[i++]; ) if (method = proto[name]) methods[name] = method;
+        array.implement(methods);
+        module.exports = array;
+    },
+    "7": function(require, module, exports, global) {
+        "use strict";
+        var prime = require("5"), slice = Array.prototype.slice;
+        var shell = prime({
+            mutator: function(key, method) {
+                this[key] = function(self) {
+                    var args = arguments.length > 1 ? slice.call(arguments, 1) : [];
+                    return method.apply(self, args);
+                };
+                this.prototype[key] = method;
+            },
+            constructor: {
+                prototype: {}
+            }
+        });
+        module.exports = function(proto) {
+            var inherits = proto.inherits || (proto.inherits = shell);
+            proto.constructor = prime.create(inherits);
+            return prime(proto);
+        };
+    },
+    "8": function(require, module, exports, global) {
+        "use strict";
+        var shell = require("7");
+        var string = shell({
+            inherits: require("9"),
+            clean: function() {
+                return string.trim((this + "").replace(/\s+/g, " "));
+            },
+            camelize: function() {
+                return (this + "").replace(/-\D/g, function(match) {
+                    return match.charAt(1).toUpperCase();
+                });
+            },
+            hyphenate: function() {
+                return (this + "").replace(/[A-Z]/g, function(match) {
+                    return "-" + match.toLowerCase();
+                });
+            },
+            capitalize: function() {
+                return (this + "").replace(/\b[a-z]/g, function(match) {
+                    return match.toUpperCase();
+                });
+            }
+        });
+        module.exports = string;
+    },
+    "9": function(require, module, exports, global) {
+        "use strict";
+        var shell = require("7");
+        var proto = String.prototype;
+        var string = shell({
+            trim: proto.trim || function() {
+                return (this + "").replace(/^\s+|\s+$/g, "");
+            }
+        });
+        var methods = {};
+        var names = "charAt,charCodeAt,concat,indexOf,lastIndexOf,match,quote,replace,search,slice,split,substr,substring,toLowerCase,toUpperCase".split(",");
+        for (var i = 0, name, method; name = names[i++]; ) if (method = proto[name]) methods[name] = method;
+        string.implement(methods);
+        module.exports = string;
     }
 });

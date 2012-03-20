@@ -1,6 +1,10 @@
-# moofx 3
+```
+            .-   3
+.-.-..-..-.-|-._.
+' ' '`-'`-' ' ' '
+```
 
-moofx3 is a css3-enabled javascript animation library on caffeine. :~)
+moofx (3) is a css3-enabled javascript animation library
 
 ## features
 
@@ -143,7 +147,7 @@ Then just get busy with your dollars.
 
 ## BIY (build-it-yourself)
 
-you can build moofx (+dependency) from source with [wrapup](https://github.com/kamicane/wrapup)
+You can build moofx (+dependency) from source with [wrapup](https://github.com/kamicane/wrapup)
 
 ```
 npm install wrapup -g
@@ -154,3 +158,5 @@ wrup -p moofx -o moofx.js
 wrup -p moofx -o moofx-min.js -c
 wrup --help
 ```
+
+Alternatively, you can use the `makejs` node executable in this repo (you still need wrapup installed).
