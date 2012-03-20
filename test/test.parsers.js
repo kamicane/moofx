@@ -56,11 +56,11 @@ describe('CSS Parsers', function (){
 		expect(moofx.parse('opacity', undefined)).to.be("")
 		expect(moofx.parse('opacity', null)).to.be("")
 		expect(moofx.parse('opacity', "arbitrary")).to.be("1")
-		expect(moofx.parse('opacity', "10")).to.be("10")
-		expect(moofx.parse('opacity', "10px")).to.be("10")
-		expect(moofx.parse('opacity', 0)).to.be("0")
-		expect(moofx.parse('opacity', "0%")).to.be("0")
-		expect(moofx.parse('opacity', "10%")).to.be("10")
+        expect(moofx.parse('opacity', "10")).to.be("10")
+        expect(moofx.parse('opacity', "10px")).to.be("1")
+        expect(moofx.parse('opacity', 0)).to.be("0")
+        expect(moofx.parse('opacity', "0%")).to.be("1")
+        expect(moofx.parse('opacity', "10%")).to.be("1")
 	})
 
 	it('should parse colors', function(){
