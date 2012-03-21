@@ -525,9 +525,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var removeProp = function(prop, a, b, c) {
             var index = indexOf(a, prop);
             if (index !== -1) {
-                a.splice(indexOf, 1);
-                b.splice(indexOf, 1);
-                c.splice(indexOf, 1);
+                a.splice(index, 1);
+                b.splice(index, 1);
+                c.splice(index, 1);
             }
         };
         var CSSAnimation = prime({
