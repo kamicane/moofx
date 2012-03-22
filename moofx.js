@@ -24,6 +24,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
     window["moofx"] = require("0");
 })({
     "0": function(require, module, exports, global) {
+        "use strict";
         var color = require("1"), frame = require("2");
         var moofx = typeof document !== "undefined" ? require("3") : {};
         moofx.requestFrame = function(callback) {
@@ -38,6 +39,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         module.exports = moofx;
     },
     "1": function(require, module, exports, global) {
+        "use strict";
         var colors = {
             maroon: "#800000",
             red: "#ff0000",
@@ -131,6 +133,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         module.exports = color;
     },
     "2": function(require, module, exports, global) {
+        "use strict";
         var requestFrame = global.requestAnimationFrame || global.webkitRequestAnimationFrame || global.mozRequestAnimationFrame || global.oRequestAnimationFrame || global.msRequestAnimationFrame || function(callback) {
             return setTimeout(callback, 1e3 / 60);
         };
@@ -163,6 +166,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         exports.cancel = cancel;
     },
     "3": function(require, module, exports, global) {
+        "use strict";
         var color = require("1"), frame = require("2");
         var cancelFrame = frame.cancel, requestFrame = frame.request;
         var bezier = require("4");
