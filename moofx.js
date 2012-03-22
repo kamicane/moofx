@@ -26,11 +26,11 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
     "0": function(require, module, exports, global) {
         var color = require("1"), frame = require("2");
         var moofx = typeof document !== "undefined" ? require("3") : {};
-        moofx.requestFrame = function() {
+        moofx.requestFrame = function(callback) {
             frame.request(callback);
             return this;
         };
-        moofx.cancelFrame = function() {
+        moofx.cancelFrame = function(callback) {
             frame.cancel(callback);
             return this;
         };
@@ -408,6 +408,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 this.node = node;
                 this.property = property;
                 this.parse = parsers[property] || parse;
+                var self = this;
                 this.bExit = function(time) {
                     self.exit(time);
                 };
