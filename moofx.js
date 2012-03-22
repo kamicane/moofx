@@ -610,7 +610,6 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             }
         });
         var BaseAnimation = transitionName ? CSSAnimation : JSAnimation;
-        var BaseAnimation = JSAnimation;
         var UID = 0;
         var animations = {};
         var moofx = nodes.implement({
