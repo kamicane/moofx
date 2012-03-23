@@ -386,7 +386,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return parseShadow(value, normalize, node, 3);
         };
         each([ "Webkit", "Moz", "O", "ms", null ], function(prefix) {
-            each([ "transition", "transform", "transformOrigin", "transformStyle", "perspective", "backfaceVisibility" ], function(style) {
+            each([ "transition", "transform", "transformOrigin", "transformStyle", "perspective", "perspectiveOrigin", "backfaceVisibility" ], function(style) {
                 var cc = prefix ? prefix + capitalize(style) : style;
                 if (test.style[cc] != null) aliases[style] = cc;
             });
