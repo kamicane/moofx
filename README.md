@@ -15,7 +15,7 @@ moofx (3) is a css3-enabled javascript animation library
  - includes a computedStyle normalizer.
  - framework agnostic, is easily pluggable in your favorite js framework.
  - cross browser (not sure exactly which browsers just yet).
- - small footprint (15k compressed, 5k gzipped).
+ - small footprint (17k compressed, 6k gzipped).
  - simple api
 
 ## API
