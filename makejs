@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var wrup = require("wrapup")
+var WrapUp = require("wrapup")
 var fs = require("fs")
 var json = require("./package")
 
@@ -22,14 +22,17 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 */\n\n"
 
 var wrupit = function(){
-    var pkg = wrup("array.isArray,array.every,array.some,array.filter,string.contains,"+
-                   "string.number,string.escape,string.decode fixEnumBug".split(","));
+    var wrup = WrapUp()
+    wrup.log("  ERROR: ")
 
-    pkg.log("  ERROR: ")
-    pkg.package()
+    wrup.exclude("array.isArray", "array.every", "array.some", "array.filter",
+                 "string.contains", "string.number", "string.escape", "string.decode",
+                 "fixEnumBug")
 
-    fs.writeFileSync("./moofx.js", header + pkg.up(), "utf-8")
-    fs.writeFileSync("./moofx-min.js", header + pkg.up({compress: true}), "utf-8")
+    wrup.require("moofx", "./")
+
+    fs.writeFileSync("./moofx.js", header + wrup.up(), "utf-8")
+    fs.writeFileSync("./moofx-min.js", header + wrup.up({compress: true}), "utf-8")
     console.log("  written moofx.js / moofx-min.js\n")
 }
 
