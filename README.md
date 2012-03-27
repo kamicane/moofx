@@ -14,8 +14,8 @@ moofx (3) is a css3-enabled javascript animation library
  - supports transform animations in webkit browsers, firefox and ie9+.
  - includes a computedStyle normalizer.
  - framework agnostic, is easily pluggable in your favorite js framework.
- - cross browser (not sure exactly which browsers just yet).
- - small footprint (17k compressed, 6k gzipped).
+ - cross browser.
+ - small footprint, 6k gzipped (including dependencies).
  - simple api
 
 ## API
@@ -147,16 +147,15 @@ Then just get busy with your dollars.
 
 ## BIY (build-it-yourself)
 
-You can build moofx (+dependency) from source with [wrapup](https://github.com/kamicane/wrapup)
+You can build moofx (+dependencies) from source with [wrapup](https://github.com/kamicane/wrapup)
 
 ```
 npm install wrapup -g
 mkdir webdev
 cd webdev
 npm install moofx
-wrup -p moofx -o moofx.js
-wrup -p moofx -o moofx-min.js -c
-wrup --help
+wrup -r moofx moofx -o moofx.js
+wrup -r moofx moofx -o moofx-min.js -c
 ```
 
 Alternatively, you can use the `makejs` node executable in this repo (you still need wrapup installed).
