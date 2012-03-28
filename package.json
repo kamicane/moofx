@@ -1,31 +1,36 @@
 {
-	"name": "moofx",
-	"description": "A CSS3-enabled javascript animation library for node and the browser",
-	"version": "3.0.6-1",
-	"license": "MIT (http://mootools.net/license.txt)",
-	"main": "./lib/main.js",
-	"keywords": [
-		"moofx",
-		"fx",
-		"animation",
-		"transition",
-		"effects"
-	],
-	"homepage": "http://moofx.it",
-	"author": "Valerio Proietti <@kamicane> (http://mad4milk.net)",
-	"bugs": {
-        "url": "https://github.com/kamicane/moofx/issues"
-    },
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/kamicane/moofx.git"
-	},
-	"dependencies": {
-		"cubic-bezier": "0.1.2",
-        "prime": "0.0.4-alpha",
-        "nodes": "0.0.4-alpha"
-	},
-	"sources": [
-		"./moofx.js"
-	]
+  "name": "moofx",
+  "description": "A CSS3-enabled javascript animation library for node and the browser",
+  "version": "3.0.7",
+  "license": "MIT (http://mootools.net/license.txt)",
+  "main": "./lib/main.js",
+  "keywords": [
+    "moofx",
+    "fx",
+    "animation",
+    "transition",
+    "effects"
+  ],
+  "homepage": "http://moofx.it",
+  "author": "Valerio Proietti <@kamicane> (http://mad4milk.net)",
+  "bugs": {
+    "url": "https://github.com/kamicane/moofx/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kamicane/moofx.git"
+  },
+  "dependencies": {
+    "cubic-bezier": "0.1.2",
+    "prime": "0.0.4-alpha",
+    "nodes": "0.0.4-alpha"
+  },
+  "sources": [
+    "./moofx.js"
+  ],
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
 }
