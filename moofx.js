@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.5-dev
+version: 3.0.6-1
 description: A CSS3-enabled javascript animation library
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -11,6 +11,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 */
 
 (function(modules) {
+    "use strict";
     var cache = {}, require = function(id) {
         var module;
         if (module = cache[id]) return module.exports;
@@ -401,7 +402,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         equations.ease = equations["default"];
         var BrowserAnimation = prime({
-            constructor: function(node, property) {
+            constructor: function BrowserAnimation(node, property) {
                 var _getter = getter(property), _setter = setter(property);
                 this.get = function() {
                     return _getter.call(node);
@@ -482,7 +483,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         var JSAnimation = prime({
             inherits: BrowserAnimation,
-            constructor: function(node, property) {
+            constructor: function JSAnimation(node, property) {
                 JSAnimation.parent.constructor.call(this, node, property);
                 var self = this;
                 this.bStep = function(t) {
@@ -543,7 +544,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         var CSSAnimation = prime({
             inherits: BrowserAnimation,
-            constructor: function(node, property) {
+            constructor: function CSSAnimation(node, property) {
                 CSSAnimation.parent.constructor.call(this, node, property);
                 this.hproperty = hyphenate(aliases[property] || property);
                 var self = this;
@@ -640,7 +641,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                     var value = styles[property], property = camelize(property);
                     this.handle(function(node) {
                         length++;
-                        var _xid = node._xid || (node._xid = (UID++).toString(36)), anims = animations[_xid] || (animations[_xid] = {}), anim = anims[property] || (anims[property] = new BaseAnimation(node, property));
+                        var anims = this._animations || (this._animations = {});
+                        var anim = anims[property] || (anims[property] = new BaseAnimation(node, property));
                         anim.setOptions(options).start(value);
                     });
                 }
@@ -654,7 +656,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 for (var property in styles) {
                     var value = styles[property], set = setter(property = camelize(property));
                     this.handle(function(node) {
-                        var anims = animations[node._xid], anim;
+                        var anims = this._animations, anim;
                         if (anims && (anim = anims[property])) anim.stop(true);
                         set.call(node, value);
                     });
@@ -847,67 +849,97 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         module.exports = string;
     },
     a: function(require, module, exports, global) {
-        var prime = require("5"), array = require("6");
+        "use strict";
+        var prime = require("5");
+        var uniqueIndex = 0;
+        var uniqueID = function(n) {
+            return n === global ? "global" : n.uniqueNumber || (n.uniqueNumber = "n:" + (uniqueIndex++).toString(36));
+        };
+        var key = "n:" + Math.floor(Math.random() * (1295 - 36 + 1) + 36).toString(36);
         var instances = {};
-        var Node = function(node) {
-            this.node = function(i) {
-                return i ? null : node;
-            };
-            this.nodes = function(s, e) {
-                return [ node ].slice(s, e);
-            };
-            this.count = function() {
-                return 1;
-            };
-            this.handle = function(ƒ) {
-                var buffer = [];
-                var res = ƒ.call(this, node, 0, buffer);
+        var $ = prime({
+            constructor: function(n, context) {
+                if (n == null) return null;
+                if (n.nodeType || n === global) {
+                    var uid = uniqueID(n);
+                    return instances[uid] || (instances[uid] = new Node(n));
+                }
+                if (n[key]) return n;
+                var clean;
+                if (typeof n === "string") {
+                    n = $.select(n, context);
+                    clean = true;
+                }
+                if (n && n.length) {
+                    if (!clean) {
+                        var a = [], u = {};
+                        for (var i = 0, l = n.length; i < l; i++) {
+                            var instance = $(n[i]), nodes;
+                            if (instance && (nodes = instance[key])) {
+                                for (var j = 0, k = nodes.length; j < k; j++) {
+                                    var node = nodes[j], uid = uniqueID(node);
+                                    if (!u[uid]) {
+                                        a.push(node);
+                                        u[uid] = true;
+                                    }
+                                }
+                            }
+                        }
+                        if (!a.length) return null;
+                        n = a;
+                    }
+                    return n.length === 1 ? $(n[0]) : new Nodes(n);
+                }
+                return null;
+            }
+        });
+        $.select = function(expression, context) {
+            if (!context) context = document;
+            var results, length;
+            if (context.querySelectorAll && (results = context.querySelectorAll(expression)) && (length = results && results.length)) {
+                var nodes = [];
+                for (var i = 0; i < length; i++) nodes[i] = results[i];
+                return nodes;
+            }
+            return null;
+        };
+        var Node = prime({
+            inherits: $,
+            constructor: function Node(node) {
+                this[key] = [ node ];
+            },
+            node: function(i) {
+                var node = this[key][i || 0];
+                return node || null;
+            },
+            nodes: function(begin, end) {
+                return this[key].slice(begin, end);
+            },
+            count: function() {
+                return this[key].length;
+            },
+            handle: function(method) {
+                var buffer = [], node = this[key][0];
+                var res = method.call(this, node, 0, buffer);
                 if (res != null && res !== false && res !== true) buffer.push(res);
                 return buffer;
-            };
-        };
-        var Nodes = function(nodes) {
-            this.node = function(i) {
-                var node = nodes[i == null ? 0 : i];
-                return node ? node : null;
-            };
-            this.nodes = function(s, e) {
-                return array.slice(nodes, s, e);
-            };
-            this.count = function() {
-                return nodes.length;
-            };
-            this.handle = function(ƒ) {
-                var buffer = [];
+            }
+        });
+        var Nodes = prime({
+            inherits: Node,
+            constructor: function Nodes(nodes) {
+                this[key] = nodes;
+            },
+            handle: function(method) {
+                var buffer = [], nodes = this[key];
                 for (var i = 0, l = nodes.length; i < l; i++) {
-                    var node = nodes[i], res = ƒ.call(new Node(node), node, i, buffer);
+                    var node = nodes[i], res = method.call($(node), node, i, buffer);
                     if (res === false || res === true) break;
                     if (res != null) buffer.push(res);
                 }
                 return buffer;
-            };
-        };
-        var $ = prime({
-            constructor: function(nodes) {
-                if (nodes == null) return null;
-                if (nodes instanceof Nodes || nodes instanceof Node) return nodes;
-                if (typeof nodes === "string") {
-                    nodes = $.querySelectorAll(document, nodes);
-                    if (nodes == null) return null;
-                }
-                var len = nodes.length;
-                if (len == null) return new Node(nodes);
-                if (len === 1) return new Node(nodes[0]); else if (len === 0) return null;
-                return new Nodes(nodes);
             }
         });
-        Nodes.prototype = Node.prototype = $.prototype;
-        $.querySelectorAll = function(context, selector) {
-            return context.querySelectorAll ? context.querySelectorAll(selector) : null;
-        };
-        $.querySelector = function(context, selector) {
-            return context.querySelector ? context.querySelector(selector) : null;
-        };
         module.exports = $;
     }
 });
