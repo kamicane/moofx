@@ -111,7 +111,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var keys = [];
         for (var c in colors) keys.push(c);
         var shex = "(?:#([a-f0-9]{3,8}))", sval = "\\s*([.\\d%]+)\\s*", sop = "(?:,\\s*([.\\d]+)\\s*)?", slist = "\\(" + [ sval, sval, sval ] + sop + "\\)", srgb = "(?:rgb)a?", shsl = "(?:hsl)a?", skeys = "(" + keys.join("|") + ")";
-        var xhex = RegExp(shex), xrgb = RegExp(srgb + slist), xhsl = RegExp(shsl + slist);
+        var xhex = RegExp(shex,"i"), xrgb = RegExp(srgb + slist,"i"), xhsl = RegExp(shsl + slist,"i");
         var color = function(input, array) {
             if (input == null) return null;
             input = (input + "").replace(/\s+/, "");
@@ -130,7 +130,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (input[3] === 1) input.splice(3, 1);
             return "rgb" + (input.length === 4 ? "a" : "") + "(" + input + ")";
         };
-        color.x = RegExp([ skeys, shex, srgb + slist, shsl + slist ].join("|"), "g");
+        color.x = RegExp([ skeys, shex, srgb + slist, shsl + slist ].join("|"), "gi");
         module.exports = color;
     },
     "2": function(require, module, exports, global) {
