@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.6-1
+version: 3.0.7
 description: A CSS3-enabled javascript animation library
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -111,7 +111,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var keys = [];
         for (var c in colors) keys.push(c);
         var shex = "(?:#([a-f0-9]{3,8}))", sval = "\\s*([.\\d%]+)\\s*", sop = "(?:,\\s*([.\\d]+)\\s*)?", slist = "\\(" + [ sval, sval, sval ] + sop + "\\)", srgb = "(?:rgb)a?", shsl = "(?:hsl)a?", skeys = "(" + keys.join("|") + ")";
-        var xhex = RegExp(shex), xrgb = RegExp(srgb + slist), xhsl = RegExp(shsl + slist);
+        var xhex = RegExp(shex, "i"), xrgb = RegExp(srgb + slist, "i"), xhsl = RegExp(shsl + slist, "i");
         var color = function(input, array) {
             if (input == null) return null;
             input = (input + "").replace(/\s+/, "");
@@ -130,7 +130,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (input[3] === 1) input.splice(3, 1);
             return "rgb" + (input.length === 4 ? "a" : "") + "(" + input + ")";
         };
-        color.x = RegExp([ skeys, shex, srgb + slist, shsl + slist ].join("|"), "g");
+        color.x = RegExp([ skeys, shex, srgb + slist, shsl + slist ].join("|"), "gi");
         module.exports = color;
     },
     "2": function(require, module, exports, global) {
@@ -616,7 +616,6 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             }
         });
         var BaseAnimation = transitionName ? CSSAnimation : JSAnimation;
-        var UID = 0;
         var animations = {};
         var moofx = nodes.implement({
             animate: function(A, B, C) {
@@ -664,7 +663,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return this;
             },
             compute: function(property) {
-                return getter(camelize(property)).call(this.node());
+                return getter(camelize(property)).call(this[0]);
             }
         });
         moofx.parse = function(property, value, normalize, node) {
@@ -855,91 +854,67 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var uniqueID = function(n) {
             return n === global ? "global" : n.uniqueNumber || (n.uniqueNumber = "n:" + (uniqueIndex++).toString(36));
         };
-        var key = "n:" + Math.floor(Math.random() * (1295 - 36 + 1) + 36).toString(36);
         var instances = {};
+        var search = function(expression, context, nodes) {
+            if (!context) context = document;
+            var n = context.querySelectorAll ? context.querySelectorAll(expression) : null;
+            if (n && n.length) for (var i = 0, l = n.length; i < l; i++) nodes[nodes.length++] = n[i];
+        };
         var $ = prime({
-            constructor: function(n, context) {
+            constructor: function nodes(n, context) {
                 if (n == null) return null;
+                if (n instanceof Nodes) return n;
+                var self = new Nodes;
                 if (n.nodeType || n === global) {
-                    var uid = uniqueID(n);
-                    return instances[uid] || (instances[uid] = new Node(n));
-                }
-                if (n[key]) return n;
-                var clean;
-                if (typeof n === "string") {
-                    n = $.select(n, context);
-                    clean = true;
-                }
-                if (n && n.length) {
-                    if (!clean) {
-                        var a = [], u = {};
-                        for (var i = 0, l = n.length; i < l; i++) {
-                            var instance = $(n[i]), nodes;
-                            if (instance && (nodes = instance[key])) {
-                                for (var j = 0, k = nodes.length; j < k; j++) {
-                                    var node = nodes[j], uid = uniqueID(node);
-                                    if (!u[uid]) {
-                                        a.push(node);
-                                        u[uid] = true;
-                                    }
-                                }
+                    self[self.length++] = n;
+                } else if (typeof n === "string") {
+                    search(n, context, self);
+                } else if (n.length) {
+                    var uniques = {};
+                    for (var i = 0, l = n.length; i < l; i++) {
+                        var nodes = $(n[i], context);
+                        if (nodes && nodes.length) for (var j = 0, k = nodes.length; j < k; j++) {
+                            var node = nodes[j], uid = uniqueID(node);
+                            if (!uniques[uid]) {
+                                self[self.length++] = node;
+                                uniques[uid] = true;
                             }
                         }
-                        if (!a.length) return null;
-                        n = a;
                     }
-                    return n.length === 1 ? $(n[0]) : new Nodes(n);
                 }
-                return null;
-            }
-        });
-        $.select = function(expression, context) {
-            if (!context) context = document;
-            var results, length;
-            if (context.querySelectorAll && (results = context.querySelectorAll(expression)) && (length = results && results.length)) {
-                var nodes = [];
-                for (var i = 0; i < length; i++) nodes[i] = results[i];
-                return nodes;
-            }
-            return null;
-        };
-        var Node = prime({
-            inherits: $,
-            constructor: function Node(node) {
-                this[key] = [ node ];
-            },
-            node: function(i) {
-                var node = this[key][i || 0];
-                return node || null;
-            },
-            nodes: function(begin, end) {
-                return this[key].slice(begin, end);
-            },
-            count: function() {
-                return this[key].length;
-            },
-            handle: function(method) {
-                var buffer = [], node = this[key][0];
-                var res = method.call(this, node, 0, buffer);
-                if (res != null && res !== false && res !== true) buffer.push(res);
-                return buffer;
+                if (!self.length) return null;
+                if (self.length === 1) {
+                    var uid = uniqueID(self[0]);
+                    return instances[uid] || (instances[uid] = self);
+                }
+                return self;
             }
         });
         var Nodes = prime({
-            inherits: Node,
-            constructor: function Nodes(nodes) {
-                this[key] = nodes;
+            inherits: $,
+            constructor: function Nodes() {
+                this.length = 0;
             },
-            handle: function(method) {
-                var buffer = [], nodes = this[key];
-                for (var i = 0, l = nodes.length; i < l; i++) {
-                    var node = nodes[i], res = method.call($(node), node, i, buffer);
+            handle: function handle(method) {
+                var buffer = [], length = this.length;
+                if (length === 1) {
+                    var res = method.call(this, this[0], 0, buffer);
+                    if (res != null && res !== false && res !== true) buffer.push(res);
+                } else for (var i = 0; i < length; i++) {
+                    var node = this[i], res = method.call($(node), node, i, buffer);
                     if (res === false || res === true) break;
                     if (res != null) buffer.push(res);
                 }
                 return buffer;
             }
         });
+        $.use = function(extension) {
+            for (var i = 0; extension = arguments[i++]; ) {
+                $.implement(prime.create(extension.prototype));
+                if (extension.search) search = extension.search;
+            }
+            return this;
+        };
         module.exports = $;
     }
 });
