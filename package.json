@@ -1,7 +1,7 @@
 {
   "name": "moofx",
   "description": "A CSS3-enabled javascript animation library for node and the browser",
-  "version": "3.0.7",
+  "version": "3.0.8",
   "license": "MIT (http://mootools.net/license.txt)",
   "main": "./lib/main.js",
   "keywords": [
