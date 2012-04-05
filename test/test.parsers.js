@@ -75,7 +75,7 @@ describe('CSS Parsers', function (){
 		expect(moofx.parse('color', "10%")).to.be("")
 
 		expect(moofx.parse('color', "#000")).to.be("rgb(0,0,0)")
-		expect(moofx.parse('color', "#0000")).to.be("rgba(0,0,0,0)")
+		expect(moofx.parse('color', "#0000")).to.be("transparent")
 		expect(moofx.parse('color', "#000f")).to.be("rgb(0,0,0)")
 		expect(moofx.parse('color', "rgb(0, 0, 0, 0.5)")).to.be("rgba(0,0,0,0.5)")
 		expect(moofx.parse('color', "rgba(0, 0, 0, 1)")).to.be("rgb(0,0,0)")
@@ -127,7 +127,7 @@ describe('CSS Parsers', function (){
 
 		expect(moofx.parse('border', "1px dashed green")).to.be("1px dashed rgb(0,128,0)")
 		expect(moofx.parse('border', "1px none red")).to.be("1px none rgb(255,0,0)")
-		expect(moofx.parse('border', "0 double #0000")).to.be("0px double rgba(0,0,0,0)")
+		expect(moofx.parse('border', "0 double #0000")).to.be("0px double transparent")
 		expect(moofx.parse('border', "10% double rgba(0,0,0,0)", true, testee)).to.be("10px double rgba(0,0,0,0)")
 
 		expect(moofx.parse('border', "", true)).to.be("0px none rgba(0,0,0,1)")

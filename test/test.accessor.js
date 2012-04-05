@@ -61,6 +61,7 @@ describe('computes', function (){
 	})
 
 	it('should set/overwrite the opacity', function(){
+        expect(test.compute('opacity')).to.be("0.5")
 		test.style('opacity', 1)
 		expect(test.compute('opacity')).to.be("1")
 		test.style('opacity', null)

@@ -1,49 +1,50 @@
 <html>
 <head>
-	<meta charset="utf-8">
-	<title>Mocha Tests</title>
-	<link rel="stylesheet" href="https://raw.github.com/visionmedia/mocha/master/mocha.css" />
-	<script src="https://raw.github.com/LearnBoost/expect.js/d2440da086bf8dc38c6085641f23b968a0f48b29/expect.js"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script src="https://raw.github.com/visionmedia/mocha/master/mocha.js"></script>
-	
-	<script>
-		mocha.setup('bdd')
-		$(function(){mocha.run()})
-	</script>
-	
-	<script type="text/javascript" src="../moofx.js"></script>
-	
-	<script src="test.parsers.js"></script>
-	<script src="test.frame.js"></script>
-	<script src="test.accessor.js"></script>
-	
-	<style type="text/css">
-		#test {
-			width: 100px;
-			height: 100px;
-			visibility: 'hidden';
-			position: absolute;
-			top: -1000px;
-			left: -1000px;
-			opacity: 0.5;
-			filter: alpha(opacity=50);
-		}
+    <meta charset="utf-8">
+    <title>Mocha Tests</title>
+    <link rel="stylesheet" href="https://raw.github.com/visionmedia/mocha/master/mocha.css" />
+    <script src="https://raw.github.com/LearnBoost/expect.js/d2440da086bf8dc38c6085641f23b968a0f48b29/expect.js"></script>
+    <script src="https://raw.github.com/visionmedia/mocha/master/mocha.js"></script>
 
-		#testee {
-			background-color: black;
-			width: 100%;
-			height: 100%;
-			padding: 10%;
-			margin: 0;
-			border: 2px dotted red;
-		}
-	</style>
+    <script>
+        mocha.setup('bdd')
+        window.onload = function(){
+            mocha.run()
+        }
+    </script>
+
+    <script type="text/javascript" src="../moofx.js"></script>
+
+    <script src="test.parsers.js"></script>
+    <script src="test.frame.js"></script>
+    <script src="test.accessor.js"></script>
+
+    <style type="text/css">
+        #test {
+            width: 100px;
+            height: 100px;
+            visibility: 'hidden';
+            position: absolute;
+            top: -1000px;
+            left: -1000px;
+            opacity: 0.5;
+            filter: alpha(opacity=50);
+        }
+
+        #testee {
+            background-color: black;
+            width: 100%;
+            height: 100%;
+            padding: 10%;
+            margin: 0;
+            border: 2px dotted red;
+        }
+    </style>
 </head>
 <div id="test">
-	<div id="testee">some text</div>
+    <div id="testee">some text</div>
 </div>
 <body>
-	<div id="mocha"></div>
+    <div id="mocha"></div>
 </body>
 </html>
