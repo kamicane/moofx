@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.7
+version: 3.0.9
 description: A CSS3-enabled javascript animation library
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -62,10 +62,10 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             transparent: "#0000"
         };
         var RGBtoRGB = function(r, g, b, a) {
-            if (a == null) a = 1;
-            r = parseInt(r, 10);
-            g = parseInt(g, 10);
-            b = parseInt(b, 10);
+            if (a == null || a === "") a = 1;
+            r = parseFloat(r);
+            g = parseFloat(g);
+            b = parseFloat(b);
             a = parseFloat(a);
             if (!(r <= 255 && r >= 0 && g <= 255 && g >= 0 && b <= 255 && b >= 0 && a <= 1 && a >= 0)) return null;
             return [ Math.round(r), Math.round(g), Math.round(b), a ];
@@ -91,7 +91,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         var HSLtoRGB = function(h, s, l, a) {
             var r, b, g;
-            if (a == null) a = 1;
+            if (a == null || a === "") a = 1;
             h /= 360;
             s /= 100;
             l /= 100;
@@ -225,7 +225,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (value === "transparent") return normalize ? "rgba(0,0,0,0)" : value;
             var c = color(value, true);
             if (!c) return normalize ? "rgba(0,0,0,1)" : "";
-            if (c[3] === 0 && !rgba) return "transparent";
+            if (c[3] === 0 && !normalize) return "transparent";
             return !normalize && (!rgba || c[3] === 1) ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")";
         };
         var parseLength = function(value, normalize, node) {
@@ -366,7 +366,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return pvalue;
         };
         parsers.zIndex = parseString;
-        var filterName = test.style.MsFilter != null ? "MsFilter" : test.style.filter != null ? "filter" : null;
+        var filterName = test.style.MsFilter != null && "MsFilter" || test.style.filter != null && "filter";
         parsers.opacity = parseOpacity;
         if (filterName && test.style.opacity == null) {
             var matchOp = /alpha\(opacity=([\d.]+)\)/i;
@@ -386,13 +386,13 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var parseTextShadow = parsers.textShadow = function(value, normalize, node) {
             return parseShadow(value, normalize, node, 3);
         };
-        each([ "Webkit", "Moz", "O", "ms", null ], function(prefix) {
+        each([ "Webkit", "Moz", "ms" ], function(prefix) {
             each([ "transition", "transform", "transformOrigin", "transformStyle", "perspective", "perspectiveOrigin", "backfaceVisibility" ], function(style) {
-                var cc = prefix ? prefix + capitalize(style) : style;
+                var cc = prefix + capitalize(style);
                 if (test.style[cc] != null) aliases[style] = cc;
             });
         });
-        var transitionName = aliases.transition;
+        var transitionName = aliases.transition || test.style.transition != null && "transition";
         var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
             linear: "cubic-bezier(0, 0, 1, 1)",
@@ -465,9 +465,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             parseEquation: function(equation) {
                 equation = equations[equation] || equation;
                 var match = equation.replace(/\s+/g, "").match(rCubicBezier);
-                return match ? map(match.slice(1), function(v) {
+                return match && map(match.slice(1), function(v) {
                     return +v;
-                }) : null;
+                });
             }
         });
         var divide = function(string) {
@@ -616,8 +616,10 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             }
         });
         var BaseAnimation = transitionName ? CSSAnimation : JSAnimation;
-        var animations = {};
-        var moofx = nodes.implement({
+        var moofx = function(x, y) {
+            return nodes(x, y);
+        };
+        nodes.implement({
             animate: function(A, B, C) {
                 var styles = A, options = B;
                 if (typeof A === "string") {
@@ -666,6 +668,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return getter(camelize(property)).call(this[0]);
             }
         });
+        moofx.version = "3.0.9";
         moofx.parse = function(property, value, normalize, node) {
             if (!parsers[property = camelize(property)]) return null;
             return parsers[property](value, normalize, node);
@@ -855,11 +858,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return n === global ? "global" : n.uniqueNumber || (n.uniqueNumber = "n:" + (uniqueIndex++).toString(36));
         };
         var instances = {};
-        var search = function(expression, context, nodes) {
-            if (!context) context = document;
-            var n = context.querySelectorAll ? context.querySelectorAll(expression) : null;
-            if (n && n.length) for (var i = 0, l = n.length; i < l; i++) nodes[nodes.length++] = n[i];
-        };
+        var search, sort;
         var $ = prime({
             constructor: function nodes(n, context) {
                 if (n == null) return null;
@@ -868,7 +867,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 if (n.nodeType || n === global) {
                     self[self.length++] = n;
                 } else if (typeof n === "string") {
-                    search(n, context, self);
+                    if (search) search(n, context, self);
                 } else if (n.length) {
                     var uniques = {};
                     for (var i = 0, l = n.length; i < l; i++) {
@@ -881,6 +880,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                             }
                         }
                     }
+                    if (sort && self.length > 1) sort(self);
                 }
                 if (!self.length) return null;
                 if (self.length === 1) {
@@ -909,10 +909,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             }
         });
         $.use = function(extension) {
-            for (var i = 0; extension = arguments[i++]; ) {
-                $.implement(prime.create(extension.prototype));
-                if (extension.search) search = extension.search;
-            }
+            $.implement(prime.create(extension.prototype));
+            if (extension.search) search = extension.search;
+            if (extension.sort) sort = extension.sort;
             return this;
         };
         module.exports = $;
