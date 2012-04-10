@@ -21,6 +21,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 ...\n\
 */\n\n"
 
+var excludeES5Shims
+
 var wrupit = function(){
     var wrup = WrapUp()
     wrup.log("  ERROR: ")
@@ -29,6 +31,8 @@ var wrupit = function(){
                  "string.contains", "string.number", "string.escape", "string.decode",
                  "fixEnumBug")
 
+    if (excludeES5Shims) wrup.exclude("es5")
+
     wrup.require("moofx", "./")
 
     fs.writeFileSync("./moofx.js", header + wrup.up(), "utf-8")
@@ -36,11 +40,12 @@ var wrupit = function(){
     console.log("  written moofx.js / moofx-min.js\n")
 }
 
+var a2 = process.argv[2]
+if (a2 === "--es5") excludeES5Shims = true
+
 wrupit()
 
-var a2 = process.argv[2]
-
-if (a2 == '--watch' || a2 == '-w'){
+if (a2 === '--watch' || a2 === '-w'){
 
     console.log("  watching...\n")
 
