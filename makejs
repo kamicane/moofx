@@ -36,8 +36,7 @@ var wrupit = function(){
     wrup.require("moofx", "./")
 
     fs.writeFileSync("./moofx.js", header + wrup.up().replace("%version%", json.version), "utf-8")
-    fs.writeFileSync("./moofx-min.js", header + wrup.up({compress: true}).replace("%version%", json.version), "utf-8")
-    console.log("  written moofx.js / moofx-min.js\n")
+    console.log("  written moofx.js\n")
 }
 
 var a2 = process.argv[2]
