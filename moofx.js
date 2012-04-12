@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.9
+version: 3.0.10
 description: A CSS3-enabled javascript animation library
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -28,6 +28,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         "use strict";
         var color = require("1"), frame = require("2");
         var moofx = typeof document !== "undefined" ? require("3") : {};
+        moofx.version = "3.0.10";
         moofx.requestFrame = function(callback) {
             frame.request(callback);
             return this;
@@ -172,11 +173,15 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var cancelFrame = frame.cancel, requestFrame = frame.request;
         var bezier = require("4");
         var prime = require("5"), array = require("6"), string = require("8");
-        var camelize = string.camelize, hyphenate = string.hyphenate, clean = string.clean, capitalize = string.capitalize;
+        var camelize = string.camelize, clean = string.clean, capitalize = string.capitalize;
         var map = array.map, each = array.forEach, indexOf = array.indexOf;
         var nodes = require("a");
-        var round = function(number) {
-            return +(+number).toPrecision(3);
+        var hyphenated = {};
+        var hyphenate = function(self) {
+            return hyphenated[self] || (hyphenated[self] = string.hyphenate(self));
+        };
+        var round = function(n) {
+            return Math.round(n * 1e3) / 1e3;
         };
         var compute = global.getComputedStyle ? function(node) {
             var cts = getComputedStyle(node);
@@ -206,61 +211,57 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (length === 1) values.push(values[0], values[0], values[0]); else if (length === 2) values.push(values[0], values[1]); else if (length === 3) values.push(values[1]);
             return values;
         };
-        var sLength = "([-.\\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)", sLengthLax = "([-.\\d]+)([\\w%]+)?", sBorderStyle = "none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit", sCubicBezier = "cubic-bezier\\(([-.\\d]+),([-.\\d]+),([-.\\d]+),([-.\\d]+)\\)", sDuration = "([\\d.]+)(s|ms)?";
-        var rgLength = RegExp(sLength, "g"), rLengthLax = RegExp(sLengthLax), rgLengthLax = RegExp(sLengthLax, "g"), rBorderStyle = RegExp(sBorderStyle), rCubicBezier = RegExp(sCubicBezier), rgCubicBezier = RegExp(sCubicBezier, "g"), rDuration = RegExp(sDuration);
+        var sLength = "([-.\\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)", sLengthNum = sLength + "?", sBorderStyle = "none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit", sCubicBezier = "cubic-bezier\\(([-.\\d]+),([-.\\d]+),([-.\\d]+),([-.\\d]+)\\)", sDuration = "([\\d.]+)(s|ms)?";
+        var rgLength = RegExp(sLength, "g"), rLengthNum = RegExp(sLengthNum), rgLengthNum = RegExp(sLengthNum, "g"), rBorderStyle = RegExp(sBorderStyle), rCubicBezier = RegExp(sCubicBezier), rgCubicBezier = RegExp(sCubicBezier, "g"), rDuration = RegExp(sDuration);
         var parseString = function(value) {
             return value == null ? "" : value + "";
         };
         var parseOpacity = function(value, normalize) {
             if (value == null || value === "") return normalize ? "1" : "";
-            var number = +value;
-            return isFinite(number) ? number + "" : "1";
+            return isFinite(value = +value) ? value < 0 ? "0" : value + "" : "1";
         };
         try {
             test.style.color = "rgba(0,0,0,0.5)";
         } catch (e) {}
         var rgba = /^rgba/.test(test.style.color);
         var parseColor = function(value, normalize) {
-            if (!value) return normalize ? "rgba(0,0,0,1)" : "";
-            if (value === "transparent") return normalize ? "rgba(0,0,0,0)" : value;
-            var c = color(value, true);
-            if (!c) return normalize ? "rgba(0,0,0,1)" : "";
-            if (c[3] === 0 && !normalize) return "transparent";
-            return !normalize && (!rgba || c[3] === 1) ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")";
+            var black = "rgba(0,0,0,1)", c;
+            if (!value || !(c = color(value, true))) return normalize ? black : "";
+            if (normalize) return "rgba(" + c + ")";
+            var alpha = c[3];
+            if (alpha === 0) return "transparent";
+            return !rgba || alpha === 1 ? "rgb(" + c.slice(0, 3) + ")" : "rgba(" + c + ")";
         };
-        var parseLength = function(value, normalize, node) {
+        var parseLength = function(value, normalize) {
             if (value == null || value === "") return normalize ? "0px" : "";
-            var match = string.match(value, rLengthLax);
-            if (!match) return value;
-            var value = +match[1], unit = match[2] || "px";
-            if (value === 0) return value + unit;
-            return node && unit !== "px" ? round(pixelRatio(node, unit) * value) + "px" : value + unit;
+            var match = string.match(value, rLengthNum);
+            return match ? match[1] + (match[2] || "px") : value;
         };
         var parseBorderStyle = function(value, normalize) {
             if (value == null || value === "") return normalize ? "none" : "";
             var match = value.match(rBorderStyle);
             return match ? value : normalize ? "none" : "";
         };
-        var parseBorder = function(value, normalize, node) {
+        var parseBorder = function(value, normalize) {
             var normalized = "0px none rgba(0,0,0,1)";
             if (value == null || value === "") return normalize ? normalized : "";
-            if (value === 0 || value === "none") return normalize ? normalized : value;
+            if (value === 0 || value === "none") return normalize ? normalized : value + "";
             var c;
             value = value.replace(color.x, function(match) {
                 c = match;
                 return "";
             });
-            var s = value.match(rBorderStyle), l = value.match(rgLengthLax);
-            return clean([ parseLength(l ? l[0] : "", normalize, node), parseBorderStyle(s ? s[0] : "", normalize), parseColor(c, normalize) ].join(" "));
+            var s = value.match(rBorderStyle), l = value.match(rgLengthNum);
+            return clean([ parseLength(l ? l[0] : "", normalize), parseBorderStyle(s ? s[0] : "", normalize), parseColor(c, normalize) ].join(" "));
         };
-        var parseShort4 = function(value, normalize, node) {
+        var parseShort4 = function(value, normalize) {
             if (value == null || value === "") return normalize ? "0px 0px 0px 0px" : "";
             return clean(mirror4(map(clean(value).split(" "), function(v) {
-                return parseLength(v, normalize, node);
+                return parseLength(v, normalize);
             })).join(" "));
         };
-        var parseShadow = function(value, normalize, node, len) {
-            var ncolor = "rgba(0,0,0,0)", normalized = len === 3 ? ncolor + " 0px 0px 0px" : ncolor + " 0px 0px 0px 0px";
+        var parseShadow = function(value, normalize, len) {
+            var transparent = "rgba(0,0,0,0)", normalized = len === 3 ? transparent + " 0px 0px 0px" : transparent + " 0px 0px 0px 0px";
             if (value == null || value === "") return normalize ? normalized : "";
             if (value === "none") return normalize ? normalized : value;
             var colors = [], value = clean(value).replace(color.x, function(match) {
@@ -268,21 +269,21 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return "";
             });
             return map(value.split(","), function(shadow, i) {
-                var c = parseColor(colors[i], normalize), inset = /inset/.test(shadow), lengths = shadow.match(rgLengthLax) || [ "0px" ];
+                var c = parseColor(colors[i], normalize), inset = /inset/.test(shadow), lengths = shadow.match(rgLengthNum) || [ "0px" ];
                 lengths = map(lengths, function(m) {
-                    return parseLength(m, normalize, node);
+                    return parseLength(m, normalize);
                 });
                 while (lengths.length < len) lengths.push("0px");
                 var ret = inset ? [ "inset", c ] : [ c ];
                 return ret.concat(lengths).join(" ");
             }).join(", ");
         };
-        var parse = function(value, normalize, node) {
+        var parse = function(value, normalize) {
             if (value == null || value === "") return "";
             return value.replace(color.x, function(match) {
                 return parseColor(match, normalize);
             }).replace(rgLength, function(match) {
-                return parseLength(match, normalize, node);
+                return parseLength(match, normalize);
             });
         };
         var getters = {}, setters = {}, parsers = {}, aliases = {};
@@ -290,7 +291,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return getters[key] || (getters[key] = function() {
                 var alias = aliases[key] || key, parser = parsers[key] || parse;
                 return function() {
-                    return parser(compute(this)(alias), true, this);
+                    return parser(compute(this)(alias), true);
                 };
             }());
         };
@@ -298,7 +299,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return setters[key] || (setters[key] = function() {
                 var alias = aliases[key] || key, parser = parsers[key] || parse;
                 return function(value) {
-                    this.style[alias] = parser(value);
+                    this.style[alias] = parser(value, false);
                 };
             }());
         };
@@ -329,7 +330,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             };
         });
         parsers.borderWidth = parseShort4;
-        parsers.borderStyle = function(value, normalize, node) {
+        parsers.borderStyle = function(value, normalize) {
             if (value == null || value === "") return normalize ? mirror4([ "none" ]).join(" ") : "";
             value = clean(value).split(" ");
             return clean(mirror4(map(value, function(v) {
@@ -366,33 +367,123 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return pvalue;
         };
         parsers.zIndex = parseString;
-        var filterName = test.style.MsFilter != null && "MsFilter" || test.style.filter != null && "filter";
         parsers.opacity = parseOpacity;
+        var filterName = test.style.MsFilter != null && "MsFilter" || test.style.filter != null && "filter";
         if (filterName && test.style.opacity == null) {
             var matchOp = /alpha\(opacity=([\d.]+)\)/i;
             setters.opacity = function(value) {
-                value = (value = +value) === 1 ? "" : "alpha(opacity=" + value * 100 + ")";
+                value = (value = parseOpacity(value)) === "1" ? "" : "alpha(opacity=" + Math.round(value * 100) + ")";
                 var filter = compute(this)(filterName);
-                return this.style[filterName] = matchOp.test(filter) ? filter.replace(matchOp, value) : filter + value;
+                return this.style[filterName] = matchOp.test(filter) ? filter.replace(matchOp, value) : filter + " " + value;
             };
             getters.opacity = function() {
                 var match = compute(this)(filterName).match(matchOp);
                 return (!match ? 1 : match[1] / 100) + "";
             };
         }
-        var parseBoxShadow = parsers.boxShadow = function(value, normalize, node) {
-            return parseShadow(value, normalize, node, 4);
+        var parseBoxShadow = parsers.boxShadow = function(value, normalize) {
+            return parseShadow(value, normalize, 4);
         };
-        var parseTextShadow = parsers.textShadow = function(value, normalize, node) {
-            return parseShadow(value, normalize, node, 3);
+        var parseTextShadow = parsers.textShadow = function(value, normalize) {
+            return parseShadow(value, normalize, 3);
         };
-        each([ "Webkit", "Moz", "ms" ], function(prefix) {
+        each([ "Webkit", "Moz", "ms", "O", null ], function(prefix) {
             each([ "transition", "transform", "transformOrigin", "transformStyle", "perspective", "perspectiveOrigin", "backfaceVisibility" ], function(style) {
-                var cc = prefix + capitalize(style);
+                var cc = prefix ? prefix + capitalize(style) : style;
+                if (prefix === "ms") hyphenated[cc] = "-ms-" + hyphenate(style);
                 if (test.style[cc] != null) aliases[style] = cc;
             });
         });
-        var transitionName = aliases.transition || test.style.transition != null && "transition";
+        var transitionName = aliases.transition, transformName = aliases.transform;
+        if (transitionName === "OTransition") transitionName = null;
+        var parseTransform2d, Transform2d;
+        if (!transitionName && transformName) (function() {
+            var unmatrix = require("b");
+            var v = "\\s*([-\\d\\w.]+)\\s*";
+            var rMatrix = RegExp("matrix\\(" + [ v, v, v, v, v, v ] + "\\)");
+            var decomposeMatrix = function(matrix) {
+                var d = unmatrix.apply(null, matrix.match(rMatrix).slice(1));
+                return [ "translate(" + map(d[0], function(v) {
+                    return round(v) + "px";
+                }) + ")", "rotate(" + round(d[1] * 180 / Math.PI) + "deg)", "skewX(" + round(d[2] * 180 / Math.PI) + "deg)", "scale(" + map(d[3], round) + ")" ].join(" ");
+            };
+            var def0px = function(value) {
+                return value || "0px";
+            }, def1 = function(value) {
+                return value || "1";
+            }, def0deg = function(value) {
+                return value || "0deg";
+            };
+            var transforms = {
+                translate: function(value) {
+                    if (!value) value = "0px,0px";
+                    var values = value.split(",");
+                    if (!values[1]) values[1] = "0px";
+                    return map(values, clean) + "";
+                },
+                translateX: def0px,
+                translateY: def0px,
+                scale: function(value) {
+                    if (!value) value = "1,1";
+                    var values = value.split(",");
+                    if (!values[1]) values[1] = values[0];
+                    return map(values, clean) + "";
+                },
+                scaleX: def1,
+                scaleY: def1,
+                rotate: def0deg,
+                skewX: def0deg,
+                skewY: def0deg
+            };
+            Transform2d = prime({
+                constructor: function(transform) {
+                    var names = this.names = [];
+                    var values = this.values = [];
+                    transform.replace(/(\w+)\(([-.\d\s\w,]+)\)/g, function(match, name, value) {
+                        names.push(name);
+                        values.push(value);
+                    });
+                },
+                identity: function() {
+                    var functions = [];
+                    each(this.names, function(name) {
+                        var fn = transforms[name];
+                        if (fn) functions.push(name + "(" + fn() + ")");
+                    });
+                    return functions.join(" ");
+                },
+                sameType: function(transformObject) {
+                    return this.names.toString() === transformObject.names.toString();
+                },
+                decompose: function() {
+                    var transform = this.toString();
+                    test.style.cssText = cssText + hyphenate(transformName) + ":" + transform + ";";
+                    document.body.appendChild(test);
+                    var m = compute(test)(transformName);
+                    if (!m || m === "none") m = "matrix(1, 0, 0, 1, 0, 0)";
+                    document.body.removeChild(test);
+                    return decomposeMatrix(m);
+                }
+            });
+            Transform2d.prototype.toString = function(clean) {
+                var values = this.values, functions = [];
+                each(this.names, function(name, i) {
+                    var fn = transforms[name];
+                    if (!fn) return;
+                    var value = fn(values[i]);
+                    if (!clean || value !== fn()) functions.push(name + "(" + value + ")");
+                });
+                return functions.length ? functions.join(" ") : "none";
+            };
+            parseTransform2d = parsers.transform = function(transform) {
+                if (!transform || transform === "none") return "none";
+                return (new Transform2d(rMatrix.test(transform) ? decomposeMatrix(transform) : transform)).toString(true);
+            };
+            getters.transform = function() {
+                var s = this.style;
+                return s[transformName] || (s[transformName] = parseTransform2d(compute(this)(transformName)));
+            };
+        })();
         var equations = {
             "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
             linear: "cubic-bezier(0, 0, 1, 1)",
@@ -437,21 +528,49 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 if (this.duration === 0) {
                     this.exitValue = to;
                     this.cancelExit = requestFrame(this.bExit);
-                } else {
-                    var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, true);
-                    if (p === parseLength || p === parseBorder || p === parseShort4) {
-                        var toUnits = toParsed.match(rgLength), i = 0;
-                        if (toUnits) fromParsed = fromParsed.replace(rgLength, function(fromMatch) {
-                            var toMatch = toUnits[i++], fromValue = fromMatch.match(rLengthLax)[1], toUnit = toMatch.match(rLengthLax)[2];
-                            return toUnit !== "px" ? round(fromValue / pixelRatio(node, toUnit)) + toUnit : fromMatch;
-                        });
-                        if (i > 0) this.set(fromParsed);
-                    }
-                    if (fromParsed === toParsed) {
-                        this.cancelExit = requestFrame(this.bExit);
+                    return;
+                }
+                var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, true, node);
+                if (p === parseLength || p === parseBorder || p === parseShort4) {
+                    var toUnits = toParsed.match(rgLength), i = 0;
+                    if (toUnits) fromParsed = fromParsed.replace(rgLength, function(fromFull, fromValue, fromUnit) {
+                        var toFull = toUnits[i++], toMatched = toFull.match(rLengthNum), toUnit = toMatched[2];
+                        if (fromUnit !== toUnit) {
+                            var fromPixels = fromUnit === "px" ? fromValue : pixelRatio(node, fromUnit) * fromValue;
+                            return round(fromPixels / pixelRatio(node, toUnit)) + toUnit;
+                        }
+                        return fromFull;
+                    });
+                    if (i > 0) this.set(fromParsed);
+                } else if (p === parseTransform2d) (function() {
+                    if (fromParsed === toParsed) return;
+                    var fromMap, toMap;
+                    if (fromParsed === "none") {
+                        toMap = new Transform2d(toParsed);
+                        toParsed = toMap.toString();
+                        fromParsed = toMap.identity();
+                        fromMap = new Transform2d(fromParsed);
+                    } else if (toParsed === "none") {
+                        fromMap = new Transform2d(fromParsed);
+                        fromParsed = fromMap.toString();
+                        toParsed = fromMap.identity();
+                        toMap = new Transform2d(toParsed);
                     } else {
-                        return [ fromParsed, toParsed ];
+                        fromMap = new Transform2d(fromParsed);
+                        fromParsed = fromMap.toString();
+                        toMap = new Transform2d(toParsed);
+                        toParsed = toMap.toString();
                     }
+                    if (fromParsed === toParsed) return;
+                    if (!fromMap.sameType(toMap)) {
+                        fromParsed = fromMap.decompose();
+                        toParsed = toMap.decompose();
+                    }
+                })();
+                if (fromParsed === toParsed) {
+                    this.cancelExit = requestFrame(this.bExit);
+                } else {
+                    return [ fromParsed, toParsed ];
                 }
             },
             parseDuration: function(duration) {
@@ -470,6 +589,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 });
             }
         });
+        var JSAnimation;
         var divide = function(string) {
             var numbers = [];
             string = string.replace(/[-.\d]+/g, function(number) {
@@ -481,7 +601,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         var calc = function(from, to, delta) {
             return (to - from) * delta + from;
         };
-        var JSAnimation = prime({
+        JSAnimation = prime({
             inherits: BrowserAnimation,
             constructor: function JSAnimation(node, property) {
                 JSAnimation.parent.constructor.call(this, node, property);
@@ -497,7 +617,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                     this.time = 0;
                     var from_ = divide(prepared[0]), to_ = divide(prepared[1]);
                     if (from_[0].length !== to_[0].length || (p === parseBoxShadow || p === parseTextShadow || p === parse) && from_[1] !== to_[1]) {
-                        this.exit(to);
+                        this.exitValue = to;
+                        this.cancelExit = requestFrame(this.bExit);
                     } else {
                         this.from = from_[0];
                         this.to = to_[0];
@@ -528,7 +649,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             },
             parseEquation: function(equation) {
                 var equation = JSAnimation.parent.parseEquation.call(this, equation);
-                if (equation == [ 0, 0, 1, 1 ]) return function(x) {
+                if (equation.toString() === "0,0,1,1") return function(x) {
                     return x;
                 };
                 return bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
@@ -647,6 +768,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                         anim.setOptions(options).start(value);
                     });
                 }
+                return this;
             },
             style: function(A, B) {
                 var styles = A;
@@ -665,13 +787,17 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return this;
             },
             compute: function(property) {
-                return getter(camelize(property)).call(this[0]);
+                property = camelize(property);
+                var node = this[0];
+                if (property === "transform" && parseTransform2d) return compute(node)(transformName);
+                var value = getter(property).call(node);
+                return value != null ? value.replace(rgLength, function(match, value, unit) {
+                    return unit === "px" ? match : pixelRatio(node, unit) * value + "px";
+                }) : "";
             }
         });
-        moofx.version = "3.0.9";
-        moofx.parse = function(property, value, normalize, node) {
-            if (!parsers[property = camelize(property)]) return null;
-            return parsers[property](value, normalize, node);
+        moofx.parse = function(property, value, normalize) {
+            return (parsers[camelize(property)] || parse)(value, normalize);
         };
         module.exports = moofx;
     },
@@ -915,5 +1041,35 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return this;
         };
         module.exports = $;
+    },
+    b: function(require, module, exports, global) {
+        "use strict";
+        var length = function(a) {
+            return Math.sqrt(a[0] * a[0] + a[1] * a[1]);
+        };
+        var normalize = function(a) {
+            var l = length(a);
+            return l ? [ a[0] / l, a[1] / l ] : [ 0, 0 ];
+        };
+        var dot = function(a, b) {
+            return a[0] * b[0] + a[1] * b[1];
+        };
+        var atan2 = Math.atan2;
+        var combine = function(a, b, ascl, bscl) {
+            return [ ascl * a[0] + bscl * b[0], ascl * a[1] + bscl * b[1] ];
+        };
+        module.exports = function(a, b, c, d, tx, ty) {
+            if (a * d - b * c === 0) return false;
+            var translate = [ tx, ty ];
+            var m = [ [ a, b ], [ c, d ] ];
+            var scale = [ length(m[0]) ];
+            m[0] = normalize(m[0]);
+            var skew = dot(m[0], m[1]);
+            m[1] = combine(m[1], m[0], 1, -skew);
+            scale[1] = length(m[1]);
+            skew /= scale[1];
+            var rotate = atan2(m[0][1], m[0][0]);
+            return [ translate, rotate, skew, scale ];
+        };
     }
 });
