@@ -71,7 +71,7 @@ describe('computes', function (){
     it('should return the opacity of an Element without seting it before', function(){
         var div = document.createElement('div')
         document.body.appendChild(div)
-        div.style.filter != null ? div.style.filter = 'alpha(opacity=40)' : div.style.opacity = "0.4"
+        div.style.opacity == null ? div.style.filter = 'alpha(opacity=40)' : div.style.opacity = "0.4"
         var opacity = moofx(div).compute('opacity')
         expect(opacity >= 0.4 && opacity < 0.4001).to.be(true) //niiiiice
         document.body.removeChild(div)
