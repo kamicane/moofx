@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var WrapUp = require("wrapup")
-var fs = require("fs")
-var json = require("./package")
+var WrapUp = require("wrapup"),
+    fs     = require("fs"),
+    json   = require("./package")
 
 console.warn("")
 console.warn("              .- " + json.version)
@@ -21,7 +21,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 ...\n\
 */\n\n"
 
-var excludeES5Shims
+var args = process.argv.slice(2)
 
 var wrupit = function(){
     var wrup = WrapUp()
@@ -31,36 +31,16 @@ var wrupit = function(){
                  "string.contains", "string.number", "string.escape", "string.decode",
                  "fixEnumBug")
 
-    if (excludeES5Shims) wrup.exclude("es5")
+    if (args.indexOf("--css3") > -1) wrup.exclude("css3")
 
     wrup.require("moofx", "./")
 
-    fs.writeFileSync("./moofx.js", header + wrup.up().replace("%version%", json.version), "utf-8")
-    console.log("  written moofx.js\n")
-}
-
-var a2 = process.argv[2]
-if (a2 === "--es5") excludeES5Shims = true
-
-wrupit()
-
-if (a2 === '--watch' || a2 === '-w'){
-
-    console.log("  watching...\n")
-
-    var scripts = ['./lib/main.js', './lib/color.js', './lib/frame.js', './lib/fx.js', './lib/unmatrix2d.js', './lib/browser.js']
-
-    scripts.forEach(function(script){
-        var filedata = fs.readFileSync(script, "utf-8")
-
-        fs.watchFile(script, {interval: 10}, function(){
-            var data = fs.readFileSync(script, "utf-8")
-            if (filedata !== data){
-                wrupit()
-                filedata = data
-            }
-        })
-
+    wrup.on("done", function(js){
+        fs.writeFileSync("./moofx.js", header + js.replace("%version%", json.version), "utf-8")
+        console.log("  written moofx.js\n")
     })
 
+    wrup.up({watch: args.indexOf("--watch") > -1})
 }
+
+wrupit()
