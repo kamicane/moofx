@@ -1,7 +1,7 @@
 /*
 ---
 provides: moofx
-version: 3.0.10
+version: 3.0.11
 description: A CSS3-enabled javascript animation library
 homepage: http://moofx.it
 author: Valerio Proietti <@kamicane> (http://mad4milk.net)
@@ -11,15 +11,13 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
 */
 
 (function(modules) {
-    "use strict";
     var cache = {}, require = function(id) {
-        var module;
-        if (module = cache[id]) return module.exports;
-        module = cache[id] = {
-            exports: {}
-        };
-        var exports = module.exports;
-        modules[id].call(exports, require, module, exports, window);
+        var module = cache[id];
+        if (!module) {
+            module = cache[id] = {};
+            var exports = module.exports = {};
+            modules[id].call(exports, require, module, exports, window);
+        }
         return module.exports;
     };
     window["moofx"] = require("0");
@@ -27,7 +25,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
     "0": function(require, module, exports, global) {
         "use strict";
         var color = require("1"), frame = require("2");
-        var moofx = typeof document !== "undefined" ? require("3") : {};
+        var moofx = typeof document !== "undefined" ? require("3") : require("a");
         moofx.version = "3.0.10";
         moofx.requestFrame = function(callback) {
             frame.request(callback);
@@ -171,11 +169,11 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         "use strict";
         var color = require("1"), frame = require("2");
         var cancelFrame = frame.cancel, requestFrame = frame.request;
-        var bezier = require("4");
-        var prime = require("5"), array = require("6"), string = require("8");
+        var prime = require("4"), array = require("5"), string = require("7");
         var camelize = string.camelize, clean = string.clean, capitalize = string.capitalize;
         var map = array.map, each = array.forEach, indexOf = array.indexOf;
-        var nodes = require("a");
+        var nodes = require("9");
+        var fx = require("a");
         var hyphenated = {};
         var hyphenate = function(self) {
             return hyphenated[self] || (hyphenated[self] = string.hyphenate(self));
@@ -211,8 +209,8 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             if (length === 1) values.push(values[0], values[0], values[0]); else if (length === 2) values.push(values[0], values[1]); else if (length === 3) values.push(values[1]);
             return values;
         };
-        var sLength = "([-.\\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)", sLengthNum = sLength + "?", sBorderStyle = "none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit", sCubicBezier = "cubic-bezier\\(([-.\\d]+),([-.\\d]+),([-.\\d]+),([-.\\d]+)\\)", sDuration = "([\\d.]+)(s|ms)?";
-        var rgLength = RegExp(sLength, "g"), rLengthNum = RegExp(sLengthNum), rgLengthNum = RegExp(sLengthNum, "g"), rBorderStyle = RegExp(sBorderStyle), rCubicBezier = RegExp(sCubicBezier), rgCubicBezier = RegExp(sCubicBezier, "g"), rDuration = RegExp(sDuration);
+        var sLength = "([-.\\d]+)(%|cm|mm|in|px|pt|pc|em|ex|ch|rem|vw|vh|vm)", sLengthNum = sLength + "?", sBorderStyle = "none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit";
+        var rgLength = RegExp(sLength, "g"), rLengthNum = RegExp(sLengthNum), rgLengthNum = RegExp(sLengthNum, "g"), rBorderStyle = RegExp(sBorderStyle);
         var parseString = function(value) {
             return value == null ? "" : value + "";
         };
@@ -398,7 +396,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         if (transitionName === "OTransition") transitionName = null;
         var parseTransform2d, Transform2d;
         if (!transitionName && transformName) (function() {
-            var unmatrix = require("b");
+            var unmatrix = require("c");
             var v = "\\s*([-\\d\\w.]+)\\s*";
             var rMatrix = RegExp("matrix\\(" + [ v, v, v, v, v, v ] + "\\)");
             var decomposeMatrix = function(matrix) {
@@ -475,6 +473,33 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 });
                 return functions.length ? functions.join(" ") : "none";
             };
+            Transform2d.union = function(from, to) {
+                if (from === to) return;
+                var fromMap, toMap;
+                if (from === "none") {
+                    toMap = new Transform2d(to);
+                    to = toMap.toString();
+                    from = toMap.identity();
+                    fromMap = new Transform2d(from);
+                } else if (to === "none") {
+                    fromMap = new Transform2d(from);
+                    from = fromMap.toString();
+                    to = fromMap.identity();
+                    toMap = new Transform2d(to);
+                } else {
+                    fromMap = new Transform2d(from);
+                    from = fromMap.toString();
+                    toMap = new Transform2d(to);
+                    to = toMap.toString();
+                }
+                if (from === to) return;
+                if (!fromMap.sameType(toMap)) {
+                    from = fromMap.decompose();
+                    to = toMap.decompose();
+                }
+                if (from === to) return;
+                return [ from, to ];
+            };
             parseTransform2d = parsers.transform = function(transform) {
                 if (!transform || transform === "none") return "none";
                 return (new Transform2d(rMatrix.test(transform) ? decomposeMatrix(transform) : transform)).toString(true);
@@ -484,15 +509,27 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return s[transformName] || (s[transformName] = parseTransform2d(compute(this)(transformName)));
             };
         })();
-        var equations = {
-            "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
-            linear: "cubic-bezier(0, 0, 1, 1)",
-            "ease-in": "cubic-bezier(0.42, 0, 1.0, 1.0)",
-            "ease-out": "cubic-bezier(0, 0, 0.58, 1.0)",
-            "ease-in-out": "cubic-bezier(0.42, 0, 0.58, 1.0)"
+        var prepare = function(node, property, to) {
+            var parser = parsers[property] || parse, from = getter(property).call(node), to = parser(to, true);
+            if (from === to) return;
+            if (parser === parseLength || parser === parseBorder || parser === parseShort4) {
+                var toAll = to.match(rgLength), i = 0;
+                if (toAll) from = from.replace(rgLength, function(fromFull, fromValue, fromUnit) {
+                    var toFull = toAll[i++], toMatched = toFull.match(rLengthNum), toUnit = toMatched[2];
+                    if (fromUnit !== toUnit) {
+                        var fromPixels = fromUnit === "px" ? fromValue : pixelRatio(node, fromUnit) * fromValue;
+                        return round(fromPixels / pixelRatio(node, toUnit)) + toUnit;
+                    }
+                    return fromFull;
+                });
+                if (i > 0) setter(property).call(node, from);
+            } else if (parser === parseTransform2d) {
+                return Transform2d.union(from, to);
+            }
+            return from !== to ? [ from, to ] : null;
         };
-        equations.ease = equations["default"];
         var BrowserAnimation = prime({
+            inherits: fx,
             constructor: function BrowserAnimation(node, property) {
                 var _getter = getter(property), _setter = setter(property);
                 this.get = function() {
@@ -501,158 +538,40 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 this.set = function(value) {
                     return _setter.call(node, value);
                 };
+                BrowserAnimation.parent.constructor.call(this, this.set);
                 this.node = node;
                 this.property = property;
-                this.parse = parsers[property] || parse;
-                var self = this;
-                this.bExit = function(time) {
-                    self.exit(time);
-                };
-            },
-            setOptions: function(options) {
-                if (options == null) options = {};
-                var duration = options.duration;
-                if (!(this.duration = this.parseDuration(duration || "500ms"))) throw new Error(this.duration + " is not a valid duration");
-                if (!(this.equation = this.parseEquation(options.equation || "default"))) throw new Error(this.equation + " is not a valid equation");
-                this.callback = options.callback || function() {};
-                return this;
-            },
-            exit: function(time) {
-                if (this.exitValue != null) this.set(this.exitValue);
-                this.cancelExit = null;
-                this.callback(time);
-                return null;
-            },
-            prepare: function(to) {
-                this.exitValue = null;
-                if (this.duration === 0) {
-                    this.exitValue = to;
-                    this.cancelExit = requestFrame(this.bExit);
-                    return;
-                }
-                var node = this.node, p = this.parse, fromParsed = this.get(), toParsed = p(to, true, node);
-                if (p === parseLength || p === parseBorder || p === parseShort4) {
-                    var toUnits = toParsed.match(rgLength), i = 0;
-                    if (toUnits) fromParsed = fromParsed.replace(rgLength, function(fromFull, fromValue, fromUnit) {
-                        var toFull = toUnits[i++], toMatched = toFull.match(rLengthNum), toUnit = toMatched[2];
-                        if (fromUnit !== toUnit) {
-                            var fromPixels = fromUnit === "px" ? fromValue : pixelRatio(node, fromUnit) * fromValue;
-                            return round(fromPixels / pixelRatio(node, toUnit)) + toUnit;
-                        }
-                        return fromFull;
-                    });
-                    if (i > 0) this.set(fromParsed);
-                } else if (p === parseTransform2d) (function() {
-                    if (fromParsed === toParsed) return;
-                    var fromMap, toMap;
-                    if (fromParsed === "none") {
-                        toMap = new Transform2d(toParsed);
-                        toParsed = toMap.toString();
-                        fromParsed = toMap.identity();
-                        fromMap = new Transform2d(fromParsed);
-                    } else if (toParsed === "none") {
-                        fromMap = new Transform2d(fromParsed);
-                        fromParsed = fromMap.toString();
-                        toParsed = fromMap.identity();
-                        toMap = new Transform2d(toParsed);
-                    } else {
-                        fromMap = new Transform2d(fromParsed);
-                        fromParsed = fromMap.toString();
-                        toMap = new Transform2d(toParsed);
-                        toParsed = toMap.toString();
-                    }
-                    if (fromParsed === toParsed) return;
-                    if (!fromMap.sameType(toMap)) {
-                        fromParsed = fromMap.decompose();
-                        toParsed = toMap.decompose();
-                    }
-                })();
-                if (fromParsed === toParsed) {
-                    this.cancelExit = requestFrame(this.bExit);
-                } else {
-                    return [ fromParsed, toParsed ];
-                }
-            },
-            parseDuration: function(duration) {
-                if (duration = string.match(duration, rDuration)) {
-                    var time = +duration[1], unit = duration[2] || "ms";
-                    if (unit === "s") return time * 1e3;
-                    if (unit === "ms") return time;
-                }
-                return null;
-            },
-            parseEquation: function(equation) {
-                equation = equations[equation] || equation;
-                var match = equation.replace(/\s+/g, "").match(rCubicBezier);
-                return match && map(match.slice(1), function(v) {
-                    return +v;
-                });
             }
         });
         var JSAnimation;
-        var divide = function(string) {
-            var numbers = [];
-            string = string.replace(/[-.\d]+/g, function(number) {
-                numbers.push(+number);
-                return "@";
-            });
-            return [ numbers, string ];
-        };
-        var calc = function(from, to, delta) {
-            return (to - from) * delta + from;
-        };
         JSAnimation = prime({
             inherits: BrowserAnimation,
-            constructor: function JSAnimation(node, property) {
-                JSAnimation.parent.constructor.call(this, node, property);
-                var self = this;
-                this.bStep = function(t) {
-                    return self.step(t);
-                };
+            constructor: function JSAnimation() {
+                return JSAnimation.parent.constructor.apply(this, arguments);
             },
             start: function(to) {
                 this.stop();
-                var prepared = this.prepare(to), p = this.parse;
-                if (prepared) {
-                    this.time = 0;
-                    var from_ = divide(prepared[0]), to_ = divide(prepared[1]);
-                    if (from_[0].length !== to_[0].length || (p === parseBoxShadow || p === parseTextShadow || p === parse) && from_[1] !== to_[1]) {
-                        this.exitValue = to;
-                        this.cancelExit = requestFrame(this.bExit);
-                    } else {
-                        this.from = from_[0];
-                        this.to = to_[0];
-                        this.template = to_[1];
-                        this.cancelStep = requestFrame(this.bStep);
-                    }
+                if (this.duration === 0) {
+                    this.cancel(to);
+                    return this;
+                }
+                var fromTo = prepare(this.node, this.property, to);
+                if (!fromTo) {
+                    this.cancel(to);
+                    return this;
+                }
+                JSAnimation.parent.start.apply(this, fromTo);
+                if (!this.cancelStep) return this;
+                var parser = parsers[this.property] || parse;
+                if ((parser === parseBoxShadow || parser === parseTextShadow || parser === parse) && this.templateFrom !== this.templateTo) {
+                    this.cancelStep();
+                    delete this.cancelStep;
+                    this.cancel(to);
                 }
                 return this;
-            },
-            stop: function() {
-                if (this.cancelExit) this.cancelExit = this.cancelExit(); else if (this.cancelStep) this.cancelStep = this.cancelStep();
-                return this;
-            },
-            step: function(now) {
-                this.time || (this.time = now);
-                var factor = (now - this.time) / this.duration;
-                if (factor > 1) factor = 1;
-                var delta = this.equation(factor), tpl = this.template, from = this.from, to = this.to;
-                for (var i = 0, l = from.length; i < l; i++) {
-                    var f = from[i], t = to[i];
-                    tpl = tpl.replace("@", t !== f ? calc(f, t, delta) : t);
-                }
-                this.set(tpl);
-                if (factor !== 1) this.cancelStep = requestFrame(this.bStep); else {
-                    this.cancelStep = null;
-                    this.callback(now);
-                }
             },
             parseEquation: function(equation) {
-                var equation = JSAnimation.parent.parseEquation.call(this, equation);
-                if (equation.toString() === "0,0,1,1") return function(x) {
-                    return x;
-                };
-                return bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
+                if (typeof equation === "string") return JSAnimation.parent.parseEquation.call(this, equation);
             }
         });
         var remove3 = function(value, a, b, c) {
@@ -681,39 +600,50 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             },
             start: function(to) {
                 this.stop();
-                var prepared = this.prepare(to);
-                if (prepared) {
-                    this.to = prepared[1];
-                    this.cancelSetTransitionCSS = requestFrame(this.bSetTransitionCSS);
+                if (this.duration === 0) {
+                    this.cancel(to);
+                    return this;
                 }
+                var fromTo = prepare(this.node, this.property, to);
+                if (!fromTo) {
+                    this.cancel(to);
+                    return this;
+                }
+                this.to = fromTo[1];
+                this.cancelSetTransitionCSS = requestFrame(this.bSetTransitionCSS);
                 return this;
             },
-            setTransitionCSS: function() {
-                this.cancelSetTransitionCSS = null;
+            setTransitionCSS: function(time) {
+                delete this.cancelSetTransitionCSS;
                 this.resetCSS(true);
                 this.cancelSetStyleCSS = requestFrame(this.bSetStyleCSS);
             },
             setStyleCSS: function(time) {
-                this.cancelSetStyleCSS = null;
+                delete this.cancelSetStyleCSS;
                 var duration = this.duration;
                 this.cancelComplete = setTimeout(this.bComplete, duration);
                 this.endTime = time + duration;
                 this.set(this.to);
             },
             complete: function() {
-                this.cancelComplete = null;
+                delete this.cancelComplete;
                 this.resetCSS();
                 this.callback(this.endTime);
-                return null;
             },
             stop: function(hard) {
-                if (this.cancelExit) this.cancelExit = this.cancelExit(); else if (this.cancelSetTransitionCSS) {
-                    this.cancelSetTransitionCSS = this.cancelSetTransitionCSS();
+                if (this.cancelExit) {
+                    this.cancelExit();
+                    delete this.cancelExit;
+                } else if (this.cancelSetTransitionCSS) {
+                    this.cancelSetTransitionCSS();
+                    delete this.cancelSetTransitionCSS;
                 } else if (this.cancelSetStyleCSS) {
-                    this.cancelSetStyleCSS = this.cancelSetStyleCSS();
+                    this.cancelSetStyleCSS();
+                    delete this.cancelSetStyleCSS;
                     if (hard) this.resetCSS();
                 } else if (this.cancelComplete) {
-                    this.cancelComplete = clearTimeout(this.cancelComplete);
+                    clearTimeout(this.cancelComplete);
+                    delete this.cancelComplete;
                     if (hard) {
                         this.resetCSS();
                         this.set(this.get());
@@ -722,7 +652,7 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 return this;
             },
             resetCSS: function(inclusive) {
-                var rules = compute(this.node), properties = rules(transitionName + "Property").replace(/\s+/g, "").split(","), durations = rules(transitionName + "Duration").replace(/\s+/g, "").split(","), equations = rules(transitionName + "TimingFunction").replace(/\s+/g, "").match(rgCubicBezier);
+                var rules = compute(this.node), properties = rules(transitionName + "Property").replace(/\s+/g, "").split(","), durations = rules(transitionName + "Duration").replace(/\s+/g, "").split(","), equations = rules(transitionName + "TimingFunction").replace(/\s+/g, "").match(/cubic-bezier\([\d-.,]+\)/g);
                 remove3("all", properties, durations, equations);
                 remove3(this.hproperty, properties, durations, equations);
                 if (inclusive) {
@@ -734,11 +664,14 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
                 nodeStyle[transitionName + "Property"] = properties;
                 nodeStyle[transitionName + "Duration"] = durations;
                 nodeStyle[transitionName + "TimingFunction"] = equations;
+            },
+            parseEquation: function(equation) {
+                if (typeof equation === "string") return CSSAnimation.parent.parseEquation.call(this, equation, true);
             }
         });
         var BaseAnimation = transitionName ? CSSAnimation : JSAnimation;
         var moofx = function(x, y) {
-            return nodes(x, y);
+            return typeof x === "function" ? fx(x) : nodes(x, y);
         };
         nodes.implement({
             animate: function(A, B, C) {
@@ -802,42 +735,6 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         module.exports = moofx;
     },
     "4": function(require, module, exports, global) {
-        module.exports = function(x1, y1, x2, y2, epsilon) {
-            var curveX = function(t) {
-                var v = 1 - t;
-                return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
-            };
-            var curveY = function(t) {
-                var v = 1 - t;
-                return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
-            };
-            var derivativeCurveX = function(t) {
-                var v = 1 - t;
-                return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (-t * t * t + 2 * v * t) * x2;
-            };
-            return function(t) {
-                var x = t, t0, t1, t2, x2, d2, i;
-                for (t2 = x, i = 0; i < 8; i++) {
-                    x2 = curveX(t2) - x;
-                    if (Math.abs(x2) < epsilon) return curveY(t2);
-                    d2 = derivativeCurveX(t2);
-                    if (Math.abs(d2) < 1e-6) break;
-                    t2 = t2 - x2 / d2;
-                }
-                t0 = 0, t1 = 1, t2 = x;
-                if (t2 < t0) return curveY(t0);
-                if (t2 > t1) return curveY(t1);
-                while (t0 < t1) {
-                    x2 = curveX(t2);
-                    if (Math.abs(x2 - x) < epsilon) return curveY(t2);
-                    if (x > x2) t0 = t2; else t1 = t2;
-                    t2 = (t1 - t0) * .5 + t0;
-                }
-                return curveY(t2);
-            };
-        };
-    },
-    "5": function(require, module, exports, global) {
         "use strict";
         var has = function(self, key) {
             return Object.hasOwnProperty.call(self, key);
@@ -880,9 +777,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         prime.create = create;
         module.exports = prime;
     },
-    "6": function(require, module, exports, global) {
+    "5": function(require, module, exports, global) {
         "use strict";
-        var shell = require("7");
+        var shell = require("6");
         var proto = Array.prototype;
         var array = shell({
             filter: proto.filter,
@@ -914,9 +811,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         array.implement(methods);
         module.exports = array;
     },
-    "7": function(require, module, exports, global) {
+    "6": function(require, module, exports, global) {
         "use strict";
-        var prime = require("5"), slice = Array.prototype.slice;
+        var prime = require("4"), slice = Array.prototype.slice;
         var shell = prime({
             mutator: function(key, method) {
                 this[key] = function(self) {
@@ -935,11 +832,11 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
             return prime(proto);
         };
     },
-    "8": function(require, module, exports, global) {
+    "7": function(require, module, exports, global) {
         "use strict";
-        var shell = require("7");
+        var shell = require("6");
         var string = shell({
-            inherits: require("9"),
+            inherits: require("8"),
             clean: function() {
                 return string.trim((this + "").replace(/\s+/g, " "));
             },
@@ -961,9 +858,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         });
         module.exports = string;
     },
-    "9": function(require, module, exports, global) {
+    "8": function(require, module, exports, global) {
         "use strict";
-        var shell = require("7");
+        var shell = require("6");
         var proto = String.prototype;
         var string = shell({
             trim: proto.trim || function() {
@@ -976,9 +873,9 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         string.implement(methods);
         module.exports = string;
     },
-    a: function(require, module, exports, global) {
+    "9": function(require, module, exports, global) {
         "use strict";
-        var prime = require("5");
+        var prime = require("4");
         var uniqueIndex = 0;
         var uniqueID = function(n) {
             return n === global ? "global" : n.uniqueNumber || (n.uniqueNumber = "n:" + (uniqueIndex++).toString(36));
@@ -1042,7 +939,202 @@ includes: cubic-bezier by Arian Stolwijk (https://github.com/arian/cubic-bezier)
         };
         module.exports = $;
     },
+    a: function(require, module, exports, global) {
+        "use strict";
+        var prime = require("4"), requestFrame = require("2").request, bezier = require("b");
+        var map = require("5").map;
+        var sDuration = "([\\d.]+)(s|ms)?", sCubicBezier = "cubic-bezier\\(([-.\\d]+),([-.\\d]+),([-.\\d]+),([-.\\d]+)\\)";
+        var rDuration = RegExp(sDuration), rCubicBezier = RegExp(sCubicBezier), rgCubicBezier = RegExp(sCubicBezier, "g");
+        var equations = {
+            "default": "cubic-bezier(0.25, 0.1, 0.25, 1.0)",
+            linear: "cubic-bezier(0, 0, 1, 1)",
+            "ease-in": "cubic-bezier(0.42, 0, 1.0, 1.0)",
+            "ease-out": "cubic-bezier(0, 0, 0.58, 1.0)",
+            "ease-in-out": "cubic-bezier(0.42, 0, 0.58, 1.0)"
+        };
+        equations.ease = equations["default"];
+        var compute = function(from, to, delta) {
+            return (to - from) * delta + from;
+        };
+        var divide = function(string) {
+            var numbers = [];
+            var template = (string + "").replace(/[-.\d]+/g, function(number) {
+                numbers.push(+number);
+                return "@";
+            });
+            return [ numbers, template ];
+        };
+        var Fx = prime({
+            constructor: function Fx(render, options) {
+                this.setOptions(options);
+                this.render = render || function() {};
+                var self = this;
+                this.bStep = function(t) {
+                    return self.step(t);
+                };
+                this.bExit = function(time) {
+                    self.exit(time);
+                };
+            },
+            setOptions: function(options) {
+                if (options == null) options = {};
+                if (!(this.duration = this.parseDuration(options.duration || "500ms"))) throw new Error("invalid duration");
+                if (!(this.equation = this.parseEquation(options.equation || "default"))) throw new Error("invalid equation");
+                this.callback = options.callback || function() {};
+                return this;
+            },
+            parseDuration: function(duration) {
+                if (duration = (duration + "").match(rDuration)) {
+                    var time = +duration[1], unit = duration[2] || "ms";
+                    if (unit === "s") return time * 1e3;
+                    if (unit === "ms") return time;
+                }
+            },
+            parseEquation: function(equation, array) {
+                var type = typeof equation;
+                if (type === "function") {
+                    return equation;
+                } else if (type === "string") {
+                    equation = equations[equation] || equation;
+                    var match = equation.replace(/\s+/g, "").match(rCubicBezier);
+                    if (match) {
+                        equation = map(match.slice(1), function(v) {
+                            return +v;
+                        });
+                        if (array) return equation;
+                        if (equation.toString() === "0,0,1,1") return function(x) {
+                            return x;
+                        };
+                        type = "object";
+                    }
+                }
+                if (type === "object") {
+                    return bezier(equation[0], equation[1], equation[2], equation[3], 1e3 / 60 / this.duration / 4);
+                }
+            },
+            cancel: function(to) {
+                this.to = to;
+                this.cancelExit = requestFrame(this.bExit);
+            },
+            exit: function(time) {
+                this.render(this.to);
+                delete this.cancelExit;
+                this.callback(time);
+            },
+            start: function(from, to) {
+                this.stop();
+                if (this.duration === 0) {
+                    this.cancel(to);
+                    return this;
+                }
+                this.isArray = false;
+                this.isNumber = false;
+                var fromType = typeof from, toType = typeof to;
+                if (fromType === "object" && toType === "object") {
+                    this.isArray = true;
+                } else if (fromType === "number" && toType === "number") {
+                    this.isNumber = true;
+                }
+                var from_ = divide(from), to_ = divide(to);
+                this.from = from_[0];
+                this.to = to_[0];
+                this.templateFrom = from_[1];
+                this.templateTo = to_[1];
+                if (this.from.length !== this.to.length || this.from.toString() === this.to.toString()) {
+                    this.cancel(to);
+                    return this;
+                }
+                delete this.time;
+                this.length = this.from.length;
+                this.cancelStep = requestFrame(this.bStep);
+                return this;
+            },
+            stop: function() {
+                if (this.cancelExit) {
+                    this.cancelExit();
+                    delete this.cancelExit;
+                } else if (this.cancelStep) {
+                    this.cancelStep();
+                    delete this.cancelStep;
+                }
+                return this;
+            },
+            step: function(now) {
+                this.time || (this.time = now);
+                var factor = (now - this.time) / this.duration;
+                if (factor > 1) factor = 1;
+                var delta = this.equation(factor), from = this.from, to = this.to, tpl = this.templateTo;
+                for (var i = 0, l = this.length; i < l; i++) {
+                    var f = from[i], t = to[i];
+                    tpl = tpl.replace("@", t !== f ? compute(f, t, delta) : t);
+                }
+                this.render(this.isArray ? tpl.split(",") : this.isNumber ? +tpl : tpl);
+                if (factor !== 1) {
+                    this.cancelStep = requestFrame(this.bStep);
+                } else {
+                    delete this.cancelStep;
+                    this.callback(now);
+                }
+            }
+        });
+        var fx = function(render) {
+            var ffx = new Fx(render);
+            return {
+                start: function(from, to, options) {
+                    var type = typeof options;
+                    ffx.setOptions(type === "function" ? {
+                        callback: options
+                    } : type === "string" || type === "number" ? {
+                        duration: options
+                    } : options).start(from, to);
+                    return this;
+                },
+                stop: function() {
+                    ffx.stop();
+                    return this;
+                }
+            };
+        };
+        fx.prototype = Fx.prototype;
+        module.exports = fx;
+    },
     b: function(require, module, exports, global) {
+        module.exports = function(x1, y1, x2, y2, epsilon) {
+            var curveX = function(t) {
+                var v = 1 - t;
+                return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
+            };
+            var curveY = function(t) {
+                var v = 1 - t;
+                return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
+            };
+            var derivativeCurveX = function(t) {
+                var v = 1 - t;
+                return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (-t * t * t + 2 * v * t) * x2;
+            };
+            return function(t) {
+                var x = t, t0, t1, t2, x2, d2, i;
+                for (t2 = x, i = 0; i < 8; i++) {
+                    x2 = curveX(t2) - x;
+                    if (Math.abs(x2) < epsilon) return curveY(t2);
+                    d2 = derivativeCurveX(t2);
+                    if (Math.abs(d2) < 1e-6) break;
+                    t2 = t2 - x2 / d2;
+                }
+                t0 = 0, t1 = 1, t2 = x;
+                if (t2 < t0) return curveY(t0);
+                if (t2 > t1) return curveY(t1);
+                while (t0 < t1) {
+                    x2 = curveX(t2);
+                    if (Math.abs(x2 - x) < epsilon) return curveY(t2);
+                    if (x > x2) t0 = t2; else t1 = t2;
+                    t2 = (t1 - t0) * .5 + t0;
+                }
+                return curveY(t2);
+            };
+        };
+    },
+    c: function(require, module, exports, global) {
         "use strict";
         var length = function(a) {
             return Math.sqrt(a[0] * a[0] + a[1] * a[1]);
