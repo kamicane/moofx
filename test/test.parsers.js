@@ -75,6 +75,7 @@ describe('CSS Parsers', function (){
         expect(moofx.parse('color', "rgb(0,0,0)")).to.be("rgb(0,0,0)")
         expect(moofx.parse('color', "#ff330099")).to.be("rgba(255,51,0,0.6)")
         expect(moofx.parse('color', "#f309")).to.be("rgba(255,51,0,0.6)")
+        expect(moofx.parse('color', "hsla(0,0%,100%,0.3)")).to.be("rgba(255,255,255,0.3)")
 
         // normalized
         expect(moofx.parse('color', "", true)).to.be("rgba(0,0,0,1)")
