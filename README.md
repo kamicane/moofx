@@ -140,7 +140,7 @@ jQuery.fn.animate = function(){
 	var moo = moofx(this.get());
 	moo.animate.apply(moo, arguments);
 	return this;
-});
+};
 ```
 
 Then just get busy with your dollars.
