@@ -23,7 +23,7 @@
   "dependencies": {
     "cubic-bezier": "0.1.2",
     "prime": "0.0.6",
-    "elements": "0.0.8"
+    "elements": "0.0.9"
   },
   "sources": [
     "./moofx.js"
