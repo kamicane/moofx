@@ -65,6 +65,12 @@ moofx(nodes).animate({'background-color': '#ffa'}, {duration: "5s", equation: 'e
 }});
 ```
 
+The options object takes as keys:
+
+ - `callback`: a function to fire when the animation is done.
+ - `duration`: duration of the animation as a number or string, in either milliseconds (500 or "500ms") or in seconds ("500s").
+ - `equation`: a standards compliant css cubic bezier function. See [cubic-bezier](http://cubic-bezier.com/) and go crazy. Yes, this works even if the browser does not support css animations. You're welcome.
+
 ### moofx::style
 
 The `style` method accepts either an object made of styles or property and a value.
@@ -176,15 +182,13 @@ var moofx = require("moofx")
 Instead of an html element, moofx in node takes a function as an argument. This function will fire for every step of the animation.
 Then you call `start(from, to)` and `stop()`
 
-```
+```javascript
 var fx = moofx(function(now){
     console.log(now)
 }, /* same options as moofx for browsers */{})/
 
 fx.start(0, 10)
-
+fx.stop()
 ```
-
-To stop the animation, use `stop()`
 
 Then get crazy and animate your command lines.
