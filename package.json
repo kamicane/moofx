@@ -28,7 +28,9 @@
   "sources": [
     "./moofx.js"
   ],
-  "devDependencies": {},
+  "devDependencies": {
+    "wrapup": "0.10"
+  },
   "optionalDependencies": {},
   "engines": {
     "node": "*"
