@@ -104,7 +104,7 @@ moofx.requestFrame(callback); //times
 
 ### moofx.color
 
-moofx also exports a simple any-to-rgb color converter, with a very basic, very straightforward usage:
+moofx also exports a simple any-to-rgb color converter:
 
 ```javascript
 moofx.color('#000'); //rgb(0, 0, 0)
@@ -115,13 +115,9 @@ moofx.color('hsl(0, 0, 0)'); //rgb(0, 0, 0)
 moofx.color('hsla(0, 0, 0, 0)'); //rgba(0, 0, 0, 0)
 ```
 
-## installation
-
-Include the pre-built moofx.js (or moofx-min.js) in the webpage of choice. Use it. Love it. Done.
-
 ## adapters
 
-moofx was built to be used in conjuction with your favorite javascript framework. Some basic examples:
+moofx can be used in conjuction with your favorite javascript framework. Some basic examples:
 
 MooTools integration:
 
@@ -145,17 +141,50 @@ jQuery.fn.animate = function(){
 
 Then just get busy with your dollars.
 
-## BIY (build-it-yourself)
+## include in a browser
 
-You can build moofx (+dependencies) from source with [wrapup](https://github.com/kamicane/wrapup)
+You can install moofx from npm:
 
 ```
-npm install wrapup -g
-mkdir webdev
-cd webdev
 npm install moofx
-wrup -r moofx moofx -o moofx.js
-wrup -r moofx moofx -o moofx-min.js -c
 ```
 
-Alternatively, you can use the `makejs` node executable in this repo (you still need wrapup installed).
+Then run the `distribute` executable, which will generate a moofx.js file in the root of the project.
+
+```
+./distribute
+```
+
+Alternatively, you can clone moofx from github, and run `npm install` afterwards
+
+```
+git clone https://github.com/kamicane/moofx.git
+cd moofx
+npm install
+./distribute
+```
+
+## in node.js
+
+Surprisingly, moofx can also be run in a node.js environment.
+Simply require it after `npm install`ing it:
+
+```javascript
+var moofx = require("moofx")
+```
+
+Instead of an html element, moofx in node takes a function as an argument. This function will fire for every step of the animation.
+Then you call `start(from, to)` and `stop()`
+
+```
+var fx = moofx(function(now){
+    console.log(now)
+}, /* same options as moofx for browsers */{})/
+
+fx.start(0, 10)
+
+```
+
+To stop the animation, use `stop()`
+
+Then get crazy and animate your command lines.
