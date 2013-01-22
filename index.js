@@ -4,11 +4,11 @@
 */"use strict"
 
 // color and timer
-var color = require("./color"),
-    frame = require("./frame")
+var color = require("./lib/color"),
+    frame = require("./lib/frame")
 
 // if we're in a browser we need ./browser, otherwise ./fx
-var moofx = (typeof document !== "undefined") ? require("./browser") : require("./fx")
+var moofx = (typeof document !== "undefined") ? require("./lib/browser") : require("./lib/fx")
 
 moofx.requestFrame = function(callback){
     frame.request(callback)

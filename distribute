@@ -27,12 +27,6 @@ var wrupit = function(){
 
     wrup.options({output: "./moofx.js", watch: args.indexOf("--watch") > -1, compress: true})
 
-    wrup.exclude("array.isArray", "array.every", "array.some", "array.filter",
-                 "string.contains", "string.number", "string.escape", "string.decode",
-                 "fixEnumBug")
-
-    if (args.indexOf("--css3") > -1) wrup.exclude("css3")
-
     wrup.require("moofx", "./")
 
     wrup.on("end", function(js){

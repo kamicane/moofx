@@ -1,9 +1,9 @@
 {
   "name": "moofx",
   "description": "A CSS3-enabled javascript animation library for node and the browser",
-  "version": "3.0.14-dev",
+  "version": "3.1.0-dev",
   "license": "MIT (http://mootools.net/license.txt)",
-  "main": "./lib/main.js",
+  "main": "./index.js",
   "keywords": [
     "moofx",
     "fx",
@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "cubic-bezier": "0.1.2",
-    "prime": "0.0.6",
-    "elements": "0.0.9"
+    "prime": "0.1",
+    "elements": "0.1"
   },
   "sources": [
     "./moofx.js"

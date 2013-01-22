@@ -1,11 +1,3 @@
-.gitmodules
 .gitignore
 .DS_Store
-*.html
-makejs
-src/*
 test/*
-moofx.js
-moofx-min.js
-.tm_properties
-test.js

@@ -72,29 +72,37 @@ describe('requestFrame/cancelFrame', function (){
 
     })
 
-    it('should not have a race condition :~)', function(done){
+    it('should only be able to cancel frames that are not part of the current iteration.', function(done){
 
         var nextCalled = false
         var next2Called = false
+        var next3Called = false
 
         var next = function(now){
             nextCalled = true
-            moofx.cancelFrame(next2)
+            moofx.cancelFrame(next2) // this should do nothing
+            moofx.requestFrame(next3)
         }
 
         var next2 = function(now){
             next2Called = true
+            moofx.cancelFrame(next3) // this should cancel the third, as it is not part of the current iteration
         }
 
         var next3 = function(){
+            next3Called = true
+        }
+
+        var doneFrame = function(){
             expect(nextCalled).to.be(true)
-            expect(next2Called).to.be(false)
+            expect(next2Called).to.be(true)
+            expect(next3Called).to.be(false)
             done()
         }
 
         moofx.requestFrame(next)
         moofx.requestFrame(next2)
-        moofx.requestFrame(next3)
+        moofx.requestFrame(doneFrame)
 
     })
 
