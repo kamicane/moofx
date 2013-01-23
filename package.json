@@ -21,7 +21,7 @@
     "url": "git://github.com/kamicane/moofx.git"
   },
   "dependencies": {
-    "cubic-bezier": "0.1.2",
+    "cubic-bezier": "0.1",
     "prime": "0.1",
     "elements": "0.1"
   },

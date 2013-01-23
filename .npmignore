@@ -1,3 +1,4 @@
 .gitignore
 .DS_Store
-test/*
+./test/*
+./moofx.js
