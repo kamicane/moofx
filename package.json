@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "cubic-bezier": "0.1",
-    "prime": "0.3",
+    "prime": "0.4",
     "elements": "0.2",
     "mout": "~0.9.0"
   },
