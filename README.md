@@ -172,7 +172,7 @@ npm install
 
 ## in node.js
 
-Surprisingly, moofx can also be run in a node.js environment.
+moofx can also run in a node.js environment.
 Simply require it after `npm install`ing it:
 
 ```javascript
